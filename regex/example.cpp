@@ -19,6 +19,10 @@ if() {
 
 }
 
+/*
+* Some comment
+*/
+
 // decimal
 int d1 = 1023;
 unsigned int d2 = 3;
@@ -96,11 +100,11 @@ wchar_t wc1 = L'a';
 const char* p = "abcdef";
 std::string s = "hello, world!";
 const char* p = "";
-const wchar_t* s4 = L"hey" L"HELLO"; // ok, same as
+const wchar_t* s4 = L"hey" L"HELLO";
 const wchar_t* s5 = L"ALPHABET";
-const char32_t* s6 = U"Jekyll" "JKL"; // ok, same as
+const char32_t* s6 = U"Jekyll" "JKL";
 const char32_t* s7 = U"Very Good";
-const char16_t* s9 = "one" u"two" "three"; // ok, same as
+const char16_t* s9 = "one" u"two" "three";
 const char16_t* sA = u"!!";
 
 // user-defined literals
