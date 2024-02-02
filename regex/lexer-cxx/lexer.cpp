@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        std::cerr << "Usage: lexer LEXEME FILE\n";
+        std::cerr << "Usage: lexer REGEXP FILE\n";
         std::exit(1);
     }
     std::ifstream ifs;
