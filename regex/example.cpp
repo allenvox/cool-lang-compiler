@@ -19,8 +19,10 @@ if() {
 
 }
 
+/* Some comment */
+
 /*
-* Some comment
+hi!
 */
 
 // decimal
@@ -91,6 +93,7 @@ a->*b = 1;
 // chars
 char c1 = 'a';
 char c2 = '\77';
+char c3 = '\xa7';
 char8_t C1 = u8'a';
 char16_t uc1 = u'a';
 char32_t Uc1 = U'a';
