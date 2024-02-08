@@ -3,8 +3,7 @@
 #ifdef <NAME>
 #ifndef <NAME>
 #if defined(<NAME>)
-#if defined <NAME>
-!defined <NAME>
+#if !defined <NAME>
 #else if <NAME>
 #elif <NAME>
 
@@ -32,6 +31,7 @@ long int d3 = 1;
 long long d4 = 2;
 unsigned long long d5 = 100'500;
 unsigned long d6 = 11249102uL;
+123'''666';
 
 // oct
 int o = 0553;
@@ -89,6 +89,7 @@ a.b = 1;
 a->b = nullptr;
 a.*b = 1;
 a->*b = 1;
+wrong-accessor{1};
 
 // chars
 char c1 = 'a';
@@ -115,4 +116,4 @@ const char16_t* sA = u"!!";
 u"one"_w;
 12_km;
 L"A" "B" "C"_x;
-"abc"_x2
+"abc"_x2;
