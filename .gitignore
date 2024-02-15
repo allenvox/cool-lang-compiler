@@ -2,7 +2,8 @@
 ~*
 lexer
 *.txt
-driver
 .DS_Store
 *.dylib
 *.txt
+bin
+obj
