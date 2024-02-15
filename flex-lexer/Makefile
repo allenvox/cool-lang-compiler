@@ -19,11 +19,11 @@ EXE = $(BIN)/driver
 
 .PHONY: all
 all: $(EXE)
-
 $(EXE): $(DRIVER) $(LEXERCPP)
 	$(DIRGUARD)
 	$(CXX) $(CFLAGS) $^ -L$(FLEXDIR)/lib -I$(FLEXDIR)/include -I$(HEADERSDIR) -o $@
 
+.PHONY: $(LEXERCPP)
 $(LEXERCPP): $(LEXERFLEX)
 	$(DIRGUARD)
 	$(FLEXXX) -o $@ $<
