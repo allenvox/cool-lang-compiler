@@ -1,0 +1,23 @@
+#pragma once
+
+enum TokenType {
+    TOKEN_CLASS,
+    TOKEN_ELSE,
+    TOKEN_FALSE,
+    TOKEN_FI,
+    TOKEN_IF,
+    TOKEN_IN,
+    TOKEN_INHERITS,
+    TOKEN_ISVOID,
+    TOKEN_LET,
+    TOKEN_LOOP,
+    TOKEN_POOL,
+    TOKEN_THEN,
+    TOKEN_WHILE,
+    TOKEN_CASE,
+    TOKEN_ESAC,
+    TOKEN_NEW,
+    TOKEN_OF,
+    TOKEN_NOT,
+    TOKEN_TRUE
+};
