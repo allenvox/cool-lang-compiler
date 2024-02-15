@@ -1,4 +1,8 @@
-folly
 .idea
 ~*
 lexer
+*.txt
+driver
+.DS_Store
+*.dylib
+*.txt
