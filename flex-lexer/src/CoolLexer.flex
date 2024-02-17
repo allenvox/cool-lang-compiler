@@ -23,8 +23,7 @@ hex_integer       ${hex_digit}{hex_digit}*
 exponent          e[+-]?{digit}+
 i                 {unsigned_integer}
 real              ({i}\.{i}?|{i}?\.{i}){exponent}?
-string            \'([^'\n]|\'\')*\'
-bad_string        \'([^'\n]|\'\')*
+string            \"([^\n]|\'\')*\"
 
 %x COMMENT
 
@@ -34,37 +33,38 @@ bad_string        \'([^'\n]|\'\')*
 
 %%
 
-"{"                 BEGIN(COMMENT);
-<COMMENT>[^}\n]+    { /* skip*/ }
-<COMMENT>\n         { lineno++; }
-<COMMENT><<EOF>>    Error("EOF in comment");
-<COMMENT>"}"        BEGIN(INITIAL);
+"(*"               BEGIN(COMMENT);
+<COMMENT>[^}\n]+   { /* skip*/ }
+<COMMENT>\n        { lineno++; }
+<COMMENT><<EOF>>   Error("EOF in comment");
+<COMMENT>"*)"      BEGIN(INITIAL);
 
-class                return TOKEN_CLASS;
-else                 return TOKEN_ELSE;
-false                return TOKEN_FALSE;
-fi                   return TOKEN_FI;
-if                   return TOKEN_IF;
-in                   return TOKEN_IN;
-inherits             return TOKEN_INHERITS;
-isvoid               return TOKEN_ISVOID;
-let                  return TOKEN_LET;
-loop                 return TOKEN_LOOP;
-pool                 return TOKEN_POOL;
-then                 return TOKEN_THEN;
-while                return TOKEN_WHILE;
-case                 return TOKEN_CASE;
-esac                 return TOKEN_ESAC;
-new                  return TOKEN_NEW;
-of                   return TOKEN_OF;
-not                  return TOKEN_NOT;
-true                 return TOKEN_TRUE;
+class              return TOKEN_CLASS;
+else               return TOKEN_ELSE;
+fi                 return TOKEN_FI;
+if                 return TOKEN_IF;
+in                 return TOKEN_IN;
+inherits           return TOKEN_INHERITS;
+let                return TOKEN_LET;
+loop               return TOKEN_LOOP;
+pool               return TOKEN_POOL;
+then               return TOKEN_THEN;
+while              return TOKEN_WHILE;
+case               return TOKEN_CASE;
+esac               return TOKEN_ESAC;
+new                return TOKEN_NEW;
+isvoid             return TOKEN_ISVOID;
+of                 return TOKEN_OF;
+not                return TOKEN_NOT;
+"{"                return TOKEN_BLOCKOPEN;
+"}"                return TOKEN_BLOCKCLOSE;
+{string}           return TOKEN_STRING;
+{identifier}       return TOKEN_IDENTIFIER;
 
-[*/+\-,^.;:()\[\]]   return yytext[0];
-
-{white_space}        { /* skip spaces */ }
-\n                   lineno++;
-.                    Error("unrecognized character");
+[*/+\-,^.;:()\[\]] return yytext[0];
+{white_space}      { /* skip spaces */ }
+\n                 lineno++;
+.                  Error("unrecognized character");
 
 %%
 
