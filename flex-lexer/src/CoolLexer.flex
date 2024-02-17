@@ -34,6 +34,41 @@ bad_string        \'([^'\n]|\'\')*
 
 %%
 
-. std::cout << "unrecognized character\n";
+"{"                 BEGIN(COMMENT);
+<COMMENT>[^}\n]+    { /* skip*/ }
+<COMMENT>\n         { lineno++; }
+<COMMENT><<EOF>>    Error("EOF in comment");
+<COMMENT>"}"        BEGIN(INITIAL);
+
+class                return TOKEN_CLASS;
+else                 return TOKEN_ELSE;
+false                return TOKEN_FALSE;
+fi                   return TOKEN_FI;
+if                   return TOKEN_IF;
+in                   return TOKEN_IN;
+inherits             return TOKEN_INHERITS;
+isvoid               return TOKEN_ISVOID;
+let                  return TOKEN_LET;
+loop                 return TOKEN_LOOP;
+pool                 return TOKEN_POOL;
+then                 return TOKEN_THEN;
+while                return TOKEN_WHILE;
+case                 return TOKEN_CASE;
+esac                 return TOKEN_ESAC;
+new                  return TOKEN_NEW;
+of                   return TOKEN_OF;
+not                  return TOKEN_NOT;
+true                 return TOKEN_TRUE;
+
+[*/+\-,^.;:()\[\]]   return yytext[0];
+
+{white_space}        { /* skip spaces */ }
+\n                   lineno++;
+.                    Error("unrecognized character");
 
 %%
+
+void CoolLexer::Error(const char* msg) const {
+    std::cerr << "Lexer error (line " << lineno << "): " << msg << ": lexeme '" << YYText() << "'\n";
+    std::exit(YY_EXIT_FAILURE);
+}
