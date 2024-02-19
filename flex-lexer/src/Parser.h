@@ -1,7 +1,7 @@
 #pragma once
 
 enum TokenType {
-    EMPTYTOKEN,
+    TOKEN_UNKNOWN,
     TOKEN_CLASS,
     TOKEN_ELSE,
     TOKEN_FALSE,
@@ -23,10 +23,10 @@ enum TokenType {
     TOKEN_TRUE,
     TOKEN_STRING,
     TOKEN_IDENTIFIER,
-    TOKEN_EQUAL,
     TOKEN_LEQ,
     TOKEN_GEQ,
     TOKEN_ASSIGN,
     TOKEN_ARROW,
-    TOKEN_TYPE
+    TOKEN_TYPE,
+    TOKEN_INT
 };
