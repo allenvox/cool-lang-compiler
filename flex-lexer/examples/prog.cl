@@ -8,4 +8,7 @@ class Main inherits IO {
 
 (*
  * Multiline comment
+ * (*
+ *  *  Nested
+ *  *)
  *)
