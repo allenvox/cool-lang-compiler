@@ -19,7 +19,7 @@ alpha_num                 ({alpha}|{digit})
 identifier                {alpha}{alpha_num}*
 string                    \"([^\"\n]|\\\n)*\"
 bad_string                \"([^\"\n]|\\\n)*
-comment                   --.*
+onelinecom                --.*
 
 %x COMMENT
 
@@ -31,11 +31,17 @@ comment                   --.*
 
 "*)"                      Error("Unmatched comment ending");
 "(*"                      BEGIN(COMMENT);
+<COMMENT>"(*"             { comment_level++; }
 <COMMENT><<EOF>>          Error("EOF in comment");
 <COMMENT>\n               { lineno++; }
 <COMMENT>.                { }
-<COMMENT>"*)"             BEGIN(INITIAL);
-{comment}                 { }
+<COMMENT>"*)"             {
+                            if (comment_level == 0) {
+                                BEGIN(INITIAL);
+                            }
+                            comment_level--;
+                          }
+{onelinecom}              { }
 
 t(?i:rue)                 return TOKEN_TRUE;
 f(?i:alse)                return TOKEN_FALSE;
