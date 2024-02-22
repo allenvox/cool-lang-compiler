@@ -2,7 +2,8 @@
 
 class Main inherits IO {
   main() : Object {
-  out_string("Hello, world.\n")
+    out_string("Hello, \
+                \"world\"\0\n");
   };
 };
 
@@ -11,4 +12,8 @@ class Main inherits IO {
  * (*
  *  *  Nested
  *  *)
+ *)
+
+ (*
+    1
  *)

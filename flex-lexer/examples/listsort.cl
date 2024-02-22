@@ -14,7 +14,8 @@ Class List inherits IO {
 	   Since abort "returns" type Object, we have to add
 	   an expression of type Int here to satisfy the typechecker.
 	   This code is, of course, unreachable.
-        *)
+    *)
+
 	car() : Int { { abort(); new Int; } };
 
 	cdr() : List { { abort(); new List; } };
