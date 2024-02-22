@@ -9,12 +9,11 @@
 class CoolLexer : public yyFlexLexer {
 private:
     std::ostream& out;
-    int lineno;
-    int comment_level;
     void Error(const char* msg) const;
+    void Escape(const char *input, char *output) const;
 
 public:
     CoolLexer(std::istream& arg_yyin, std::ostream& arg_yyout) :
-        yyFlexLexer{arg_yyin, arg_yyout}, out{arg_yyout}, lineno{1}, comment_level{0} {}
+        yyFlexLexer{arg_yyin, arg_yyout}, out{arg_yyout} {}
     virtual int yylex();
 };
