@@ -9,6 +9,10 @@
 
 #undef YY_DECL
 #define YY_DECL int CoolLexer::yylex()
+#define ERROR -1
+
+int curline = 1;
+int comment_level = 0;
 
 %}
 
@@ -16,12 +20,10 @@ white_space               [ \t\f\b\r]*
 digit                     [0-9]
 alpha                     [A-Za-z_]
 alpha_num                 ({alpha}|{digit})
-identifier                {alpha}{alpha_num}*
-string                    \"([^\"\n]|\\\n)*\"
-bad_string                \"([^\"\n]|\\\n)*
 onelinecom                --.*
 
 %x COMMENT
+%x STRING
 
 %option warn nodefault batch noyywrap c++
 %option yylineno
@@ -29,11 +31,20 @@ onelinecom                --.*
 
 %%
 
-"*)"                      Error("Unmatched comment ending");
-"(*"                      BEGIN(COMMENT);
+"\""                      { BEGIN(STRING); yymore(); }
+<STRING>\n                { Error("Wrong newline in string"); BEGIN(INITIAL); curline++; return ERROR; }
+<STRING><<EOF>>           { Error("EOF in string"); BEGIN(INITIAL); return ERROR; }
+<STRING>"\0"              { BEGIN(INITIAL); Error("Can't use \\0 in strings"); yymore(); return ERROR; }
+<STRING>[^\\\"\n]*        { yymore(); }
+<STRING>\\[^\n]           { yymore(); }
+<STRING>\\\n              { curline++; yymore(); }
+<STRING>"\""              { BEGIN(INITIAL); Escape(yytext, yytext); return TOKEN_STRING; }
+
+"*)"                      { Error("Unmatched comment ending"); BEGIN(INITIAL); return ERROR; }
+"(*"                      { BEGIN(COMMENT); comment_level = 0; }
 <COMMENT>"(*"             { comment_level++; }
-<COMMENT><<EOF>>          Error("EOF in comment");
-<COMMENT>\n               { lineno++; }
+<COMMENT><<EOF>>          { Error("EOF in comment"); BEGIN(INITIAL); return ERROR; }
+<COMMENT>\n               { curline++; }
 <COMMENT>.                { }
 <COMMENT>"*)"             {
                             if (comment_level == 0) {
@@ -63,25 +74,61 @@ f(?i:alse)                return TOKEN_FALSE;
 (?i:of)                   return TOKEN_OF;
 (?i:not)                  return TOKEN_NOT;
 "<="                      return TOKEN_LEQ;
-">="                      return TOKEN_GEQ;
 "<-"                      return TOKEN_ASSIGN;
 "=>"                      return TOKEN_ARROW;
-{string}                  return TOKEN_STRING;
-{bad_string}              Error("non-terminated string");
-[a-z]{alpha_num}*         return TOKEN_IDENTIFIER;
-[A-Z]{alpha_num}*         return TOKEN_TYPE;
-_{alpha_num}*             return TOKEN_OTHER;
-[+-]?{digit}+             return TOKEN_INT;
-
-[<>=@*/+\-,^.;:~()\[\]{}] return yytext[0];
+[a-z]{alpha_num}*         return TOKEN_IDENTIFIER_OBJECT;
+[A-Z]{alpha_num}*         return TOKEN_IDENTIFIER_TYPE;
+_{alpha_num}*             return TOKEN_IDENTIFIER_OTHER;
+{digit}+                  return TOKEN_INTCONST;
+"<"                       return TOKEN_LESS;
+"="                       return TOKEN_EQUAL;
+"@"                       return TOKEN_AT;
+"*"                       return TOKEN_MUL;
+"/"                       return TOKEN_DIVIDE;
+"+"                       return TOKEN_PLUS;
+"-"                       return TOKEN_MINUS;
+","                       return TOKEN_COMMA;
+"."                       return TOKEN_DOT;
+";"                       return TOKEN_SEMICOLON;
+":"                       return TOKEN_COLON;
+"~"                       return TOKEN_LOGICAL_NOT;
+"("                       return TOKEN_OPEN_REGULAR;
+")"                       return TOKEN_CLOSE_REGULAR;
+"["                       return TOKEN_OPEN_SQUARE;
+"]"                       return TOKEN_CLOSE_SQUARE;
+"{"                       return TOKEN_OPEN_BLOCK;
+"}"                       return TOKEN_CLOSE_BLOCK;
 
 {white_space}             { }
-\n                        lineno++;
-.                         Error("unrecognized character");
+\n                        curline++;
+.                         { BEGIN(INITIAL); Error("Unrecognized character"); return ERROR; }
 
 %%
 
 void CoolLexer::Error(const char* msg) const {
-    std::cerr << "Lexer error (line " << lineno << "): " << msg << ": lexeme '" << YYText() << "'\n";
-    std::exit(YY_EXIT_FAILURE);
+    std::cerr << "Lexer error (line " << curline << "): " << msg << ": lexeme '" << YYText() << "'\n";
+}
+
+void CoolLexer::Escape(const char *input, char *output) const {
+    if (!input || !output) return;
+    input++;
+    while (*(input + 1)) {
+        if (*input == '\\') {
+            input++; // Skip the backslash
+            switch (*input) {
+                case 'n': *output++ = '\n'; break;
+                case 't': *output++ = '\t'; break;
+                case 'f': *output++ = '\f'; break;
+                case 'b': *output++ = '\b'; break;
+                case '0': *output++ = '0'; break;
+                case '\\': *output++ = '\\'; break;
+                case '\"': *output++ = '\"'; break;
+                default: *output++ = *input;
+            }
+        } else {
+            *output++ = *input;
+        }
+        input++;
+    }
+    *output = '\0'; // Null-terminate the output string
 }
