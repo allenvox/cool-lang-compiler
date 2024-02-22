@@ -120,9 +120,6 @@ void CoolLexer::Escape(const char *input, char *output) const {
                 case 't': *output++ = '\t'; break;
                 case 'f': *output++ = '\f'; break;
                 case 'b': *output++ = '\b'; break;
-                case '0': *output++ = '0'; break;
-                case '\\': *output++ = '\\'; break;
-                case '\"': *output++ = '\"'; break;
                 default: *output++ = *input;
             }
         } else {
