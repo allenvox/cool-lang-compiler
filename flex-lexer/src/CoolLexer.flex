@@ -38,7 +38,7 @@ onelinecom                --.*
 <STRING>[^\\\"\n]*        { yymore(); }
 <STRING>\\[^\n]           { yymore(); }
 <STRING>\\\n              { curline++; yymore(); }
-<STRING>"\""              { BEGIN(INITIAL); Escape(yytext, yytext); return TOKEN_STRING; }
+<STRING>"\""              { BEGIN(INITIAL); Escape(); return TOKEN_STRING; }
 
 "*)"                      { Error("Unmatched comment ending"); BEGIN(INITIAL); return ERROR; }
 "(*"                      { BEGIN(COMMENT); comment_level = 0; }
@@ -109,12 +109,13 @@ void CoolLexer::Error(const char* msg) const {
     std::cerr << "Lexer error (line " << curline << "): " << msg << ": lexeme '" << YYText() << "'\n";
 }
 
-void CoolLexer::Escape(const char *input, char *output) const {
-    if (!input || !output) return;
-    input++;
-    while (*(input + 1)) {
+void CoolLexer::Escape() const {
+    const char *input = yytext;
+    char *output = yytext;
+    input++; // Skip opening '\"'
+    while (*(input + 1) /* Skip closing '\"' */ ) {
         if (*input == '\\') {
-            input++; // Skip the backslash
+            input++; // Skip '\\'
             switch (*input) {
                 case 'n': *output++ = '\n'; break;
                 case 't': *output++ = '\t'; break;
