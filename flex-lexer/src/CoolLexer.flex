@@ -68,9 +68,10 @@ f(?i:alse)                return TOKEN_FALSE;
 "=>"                      return TOKEN_ARROW;
 {string}                  return TOKEN_STRING;
 {bad_string}              Error("non-terminated string");
-[a-z_]{alpha_num}*        return TOKEN_IDENTIFIER;
+[a-z]{alpha_num}*         return TOKEN_IDENTIFIER;
 [A-Z]{alpha_num}*         return TOKEN_TYPE;
-{digit}+                  return TOKEN_INT;
+_{alpha_num}*             return TOKEN_OTHER;
+[+-]?{digit}+             return TOKEN_INT;
 
 [<>=@*/+\-,^.;:~()\[\]{}] return yytext[0];
 

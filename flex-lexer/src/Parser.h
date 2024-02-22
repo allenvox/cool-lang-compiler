@@ -28,5 +28,6 @@ enum TokenType {
     TOKEN_ASSIGN,
     TOKEN_ARROW,
     TOKEN_TYPE,
-    TOKEN_INT
+    TOKEN_INT,
+    TOKEN_OTHER
 };
