@@ -11,9 +11,6 @@
 #define YY_DECL int CoolLexer::yylex()
 #define ERROR -1
 
-int curline = 1;
-int comment_level = 0;
-
 %}
 
 white_space               [ \t\f\b\r]*
@@ -32,19 +29,19 @@ onelinecom                --.*
 %%
 
 "\""                      { BEGIN(STRING); yymore(); }
-<STRING>\n                { Error("Wrong newline in string"); BEGIN(INITIAL); curline++; return ERROR; }
+<STRING>\n                { Error("Wrong newline in string"); BEGIN(INITIAL); lineno++; return ERROR; }
 <STRING><<EOF>>           { Error("EOF in string"); BEGIN(INITIAL); return ERROR; }
 <STRING>"\0"              { BEGIN(INITIAL); Error("Can't use \\0 in strings"); yymore(); return ERROR; }
 <STRING>[^\\\"\n]*        { yymore(); }
 <STRING>\\[^\n]           { yymore(); }
-<STRING>\\\n              { curline++; yymore(); }
+<STRING>\\\n              { lineno++; yymore(); }
 <STRING>"\""              { BEGIN(INITIAL); Escape(); return TOKEN_STRING; }
 
 "*)"                      { Error("Unmatched comment ending"); BEGIN(INITIAL); return ERROR; }
 "(*"                      { BEGIN(COMMENT); comment_level = 0; }
 <COMMENT>"(*"             { comment_level++; }
 <COMMENT><<EOF>>          { Error("EOF in comment"); BEGIN(INITIAL); return ERROR; }
-<COMMENT>\n               { curline++; }
+<COMMENT>\n               { lineno++; }
 <COMMENT>.                { }
 <COMMENT>"*)"             {
                             if (comment_level == 0) {
@@ -100,13 +97,13 @@ _{alpha_num}*             return TOKEN_IDENTIFIER_OTHER;
 "}"                       return TOKEN_CLOSE_BLOCK;
 
 {white_space}             { }
-\n                        curline++;
+\n                        lineno++;
 .                         { BEGIN(INITIAL); Error("Unrecognized character"); return ERROR; }
 
 %%
 
 void CoolLexer::Error(const char* msg) const {
-    std::cerr << "Lexer error (line " << curline << "): " << msg << ": lexeme '" << YYText() << "'\n";
+    std::cerr << "Lexer error (line " << lineno << "): " << msg << ": lexeme '" << YYText() << "'\n";
 }
 
 void CoolLexer::Escape() const {

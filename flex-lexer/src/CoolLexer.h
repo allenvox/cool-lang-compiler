@@ -11,6 +11,8 @@ private:
     std::ostream& out;
     void Error(const char* msg) const;
     void Escape() const;
+    int lineno = 1;
+    int comment_level = 0;
 
 public:
     CoolLexer(std::istream& arg_yyin, std::ostream& arg_yyout) :
