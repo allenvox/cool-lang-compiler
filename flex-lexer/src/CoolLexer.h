@@ -10,7 +10,7 @@ class CoolLexer : public yyFlexLexer {
 private:
     std::ostream& out;
     void Error(const char* msg) const;
-    void Escape() const;
+    void EscapeStrLexeme() const;
     int lineno = 1;
     int comment_level = 0;
 

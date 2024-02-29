@@ -17,7 +17,6 @@ white_space               [ \t\f\b\r]*
 digit                     [0-9]
 alpha                     [A-Za-z_]
 alpha_num                 ({alpha}|{digit})
-onelinecom                --.*
 
 %x COMMENT
 %x STRING
@@ -28,15 +27,7 @@ onelinecom                --.*
 
 %%
 
-"\""                      { BEGIN(STRING); yymore(); }
-<STRING>\n                { Error("Wrong newline in string"); BEGIN(INITIAL); lineno++; return ERROR; }
-<STRING><<EOF>>           { Error("EOF in string"); BEGIN(INITIAL); return ERROR; }
-<STRING>"\0"              { BEGIN(INITIAL); Error("Can't use \\0 in strings"); yymore(); return ERROR; }
-<STRING>[^\\\"\n]*        { yymore(); }
-<STRING>\\[^\n]           { yymore(); }
-<STRING>\\\n              { lineno++; yymore(); }
-<STRING>"\""              { BEGIN(INITIAL); Escape(); return TOKEN_STRING; }
-
+--.*                      { }
 "*)"                      { Error("Unmatched comment ending"); BEGIN(INITIAL); return ERROR; }
 "(*"                      { BEGIN(COMMENT); comment_level = 0; }
 <COMMENT>"(*"             { comment_level++; }
@@ -49,7 +40,15 @@ onelinecom                --.*
                             }
                             comment_level--;
                           }
-{onelinecom}              { }
+
+"\""                      { BEGIN(STRING); yymore(); }
+<STRING>\n                { Error("Wrong newline in string"); BEGIN(INITIAL); lineno++; return ERROR; }
+<STRING><<EOF>>           { Error("EOF in string"); BEGIN(INITIAL); return ERROR; }
+<STRING>\0                { Error("Can't use \\0 in strings"); BEGIN(INITIAL); yymore(); return ERROR; }
+<STRING>[^\\\"\n]*        { yymore(); }
+<STRING>\\[^\n]           { yymore(); }
+<STRING>\\\n              { lineno++; yymore(); }
+<STRING>"\""              { BEGIN(INITIAL); EscapeStrLexeme(); return TOKEN_STRING; }
 
 t(?i:rue)                 return TOKEN_TRUE;
 f(?i:alse)                return TOKEN_FALSE;
@@ -70,13 +69,10 @@ f(?i:alse)                return TOKEN_FALSE;
 (?i:isvoid)               return TOKEN_ISVOID;
 (?i:of)                   return TOKEN_OF;
 (?i:not)                  return TOKEN_NOT;
+
 "<="                      return TOKEN_LEQ;
 "<-"                      return TOKEN_ASSIGN;
 "=>"                      return TOKEN_ARROW;
-[a-z]{alpha_num}*         return TOKEN_IDENTIFIER_OBJECT;
-[A-Z]{alpha_num}*         return TOKEN_IDENTIFIER_TYPE;
-_{alpha_num}*             return TOKEN_IDENTIFIER_OTHER;
-{digit}+                  return TOKEN_INTCONST;
 "<"                       return TOKEN_LESS;
 "="                       return TOKEN_EQUAL;
 "@"                       return TOKEN_AT;
@@ -96,6 +92,12 @@ _{alpha_num}*             return TOKEN_IDENTIFIER_OTHER;
 "{"                       return TOKEN_OPEN_BLOCK;
 "}"                       return TOKEN_CLOSE_BLOCK;
 
+{digit}+                  return TOKEN_CONST_INT;
+
+[a-z]{alpha_num}*         return TOKEN_IDENTIFIER_OBJECT;
+[A-Z]{alpha_num}*         return TOKEN_IDENTIFIER_TYPE;
+_{alpha_num}*             return TOKEN_IDENTIFIER_OTHER;
+
 {white_space}             { }
 \n                        lineno++;
 .                         { BEGIN(INITIAL); Error("Unrecognized character"); return ERROR; }
@@ -106,7 +108,7 @@ void CoolLexer::Error(const char* msg) const {
     std::cerr << "Lexer error (line " << lineno << "): " << msg << ": lexeme '" << YYText() << "'\n";
 }
 
-void CoolLexer::Escape() const {
+void CoolLexer::EscapeStrLexeme() const {
     const char *input = yytext;
     char *output = yytext;
     input++; // Skip opening '\"'
