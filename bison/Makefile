@@ -7,18 +7,32 @@ SRC = src
 CFLAGS = -Wall
 CC = gcc
 
-ANALYZERY = $(SRC)/infixcalc.y
-ANALYZERC = $(OBJ)/infixcalc.c
-EXE = $(BIN)/infixcalc
+INFIXY = $(SRC)/infixcalc.y
+INFIXC = $(OBJ)/infixcalc.c
+INFIXEXE = $(BIN)/infixcalc
+
+POSTFIXY = $(SRC)/rpcalc.y
+POSTFIXC = $(OBJ)/rpcalc.c
+POSTFIXEXE = $(BIN)/rpcalc
 
 .PHONY: all
-all: $(EXE)
-$(EXE): $(ANALYZERC)
+all: $(INFIXEXE) $(POSTFIXEXE)
+
+$(INFIXEXE): $(INFIXC)
 	$(DIRGUARD)
 	$(CC) $(CFLAGS) $^ -o $@ -lm
 
-.PHONY: $(ANALYZERC)
-$(ANALYZERC): $(ANALYZERY)
+$(POSTFIXEXE): $(POSTFIXC)
+	$(DIRGUARD)
+	$(CC) $(CFLAGS) $^ -o $@ -lm
+
+.PHONY: $(INFIXC)
+$(INFIXC): $(INFIXY)
+	$(DIRGUARD)
+	bison -o $@ $<
+
+.PHONY: $(POSTFIXC)
+$(POSTFIXC): $(POSTFIXY)
 	$(DIRGUARD)
 	bison -o $@ $<
 
