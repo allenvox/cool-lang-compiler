@@ -21,7 +21,7 @@ input:
 
 line:
   '\n'
-| exp '\n'  { printf ("\t%.10g\n", $1); }
+| exp '\n'  { printf ("%.10g\n", $1); }
 ;
 
 exp:
