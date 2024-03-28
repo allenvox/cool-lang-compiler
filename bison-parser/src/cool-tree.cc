@@ -632,7 +632,7 @@ void Expression_class::dump_type(std::ostream &  stream, int n)
 
 void dump_line(std::ostream &  stream, int n, tree_node *t)
 {
-  stream << pad(n) << "#" << t->get_line_number() << "\n";
+  stream << pad(n) << '#' << t->get_line_number() << '\n';
 }
 
 //
