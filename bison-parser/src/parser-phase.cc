@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
   cool_yydebug = 0;
   lex_verbose = 0;
 
-  std::cerr << "hello\n";
   for (int i = 1; i < argc; i++) {
     token_file = std::fopen(argv[i], "r");
     if (token_file == NULL) {

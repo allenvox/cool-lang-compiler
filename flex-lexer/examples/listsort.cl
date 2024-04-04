@@ -63,7 +63,6 @@ Class Cons inherits List {
 		fi
 	};
 
-
 	rcons(i : Int) : List { (new Cons).init(xcar, xcdr.rcons(i)) };
 
 	print_list() : Object {
@@ -78,7 +77,7 @@ Class Cons inherits List {
 Class Nil inherits List {
 	isNil() : Bool { true };
 
-        rev() : List { self };
+    rev() : List { self };
 
 	sort() : List { self };
 
@@ -87,12 +86,9 @@ Class Nil inherits List {
 	rcons(i : Int) : List { (new Cons).init(i,self) };
 
 	print_list() : Object { true };
-
 };
 
-
 Class Main inherits IO {
-
 	l : List;
 
 	(* iota maps its integer argument n into the list 0..n-1 *)
