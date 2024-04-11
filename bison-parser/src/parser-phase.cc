@@ -39,14 +39,22 @@ int main(int argc, char **argv) {
       std::exit(1);
     }
 
+    /*
     ast_root->dump_with_types(std::cerr, 0);
-
     std::cerr << "# Identifiers:\n";
     idtable.print();
     std::cerr << "# Strings:\n";
     stringtable.print();
     std::cerr << "# Integers:\n";
     inttable.print();
+     */
+
+    GetName v;
+    std::cerr << "All classes' names: ";
+    for(int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
+      parse_results->nth(i)->accept(v);
+      std::cerr << v.name << ' ';
+    }
 
     std::fclose(token_file);
   }
