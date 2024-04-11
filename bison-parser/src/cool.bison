@@ -142,8 +142,8 @@ feature_list :
 feature :
   OBJECTID ':' TYPEID optional_assign ';' /* attribute with initialize */
   { $$ = attr($1, $3, $4); }
-| OBJECTID '(' formal_list ')' ':' TYPEID '{' expr_list_simicolon '}' ';'
-  { $$ = method($1, $3, $6, block($8)); }
+| OBJECTID '(' formal_list ')' ':' TYPEID '{' expr '}' ';'
+  { $$ = method($1, $3, $6, $8); }
 | error ';' {}
 ;
 
