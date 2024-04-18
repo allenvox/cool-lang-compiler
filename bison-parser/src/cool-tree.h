@@ -1,5 +1,4 @@
-#ifndef COOL_TREE_H
-#define COOL_TREE_H
+#pragma once
 //////////////////////////////////////////////////////////
 //
 // file: cool-tree.h
@@ -149,6 +148,7 @@ public:
   void dump(std::ostream &stream, int n);
 
   friend class GetName;
+  friend class GetFeatures;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Class__SHARED_EXTRAS
@@ -787,7 +787,6 @@ class GetName : public Visitor {
 public:
   char *name;
 
-public:
   void visit(class__class &ref) override { name = ref.name->get_string(); }
   void visit(method_class &ref) override { name = ref.name->get_string(); }
   void visit(attr_class &ref) override { name = ref.name->get_string(); }
@@ -801,6 +800,12 @@ public:
   void visit(let_class &ref) override { name = ref.identifier->get_string(); }
   void visit(new__class &ref) override { name = ref.type_name->get_string(); }
   void visit(object_class &ref) override { name = ref.name->get_string(); }
+};
+
+class GetFeatures : public Visitor {
+public:
+  Features features;
+  void visit(class__class &ref) override { features = ref.features; }
 };
 
 // define the prototypes of the interface
@@ -849,5 +854,3 @@ Expression new_(Symbol);
 Expression isvoid(Expression);
 Expression no_expr();
 Expression object(Symbol);
-
-#endif
