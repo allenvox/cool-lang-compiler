@@ -25,17 +25,17 @@ class object_class;
 
 class Visitor {
 public:
-  virtual void visit(class__class &ref) = 0;
-  virtual void visit(method_class &ref) = 0;
-  virtual void visit(attr_class &ref) = 0;
-  virtual void visit(formal_class &ref) = 0;
-  virtual void visit(branch_class &ref) = 0;
-  virtual void visit(assign_class &ref) = 0;
-  virtual void visit(static_dispatch_class &ref) = 0;
-  virtual void visit(dispatch_class &ref) = 0;
-  virtual void visit(let_class &ref) = 0;
-  virtual void visit(new__class &ref) = 0;
-  virtual void visit(object_class &ref) = 0;
+  virtual void visit(class__class &ref) {}
+  virtual void visit(method_class &ref) {}
+  virtual void visit(attr_class &ref) {}
+  virtual void visit(formal_class &ref) {}
+  virtual void visit(branch_class &ref) {}
+  virtual void visit(assign_class &ref) {}
+  virtual void visit(static_dispatch_class &ref) {}
+  virtual void visit(dispatch_class &ref) {}
+  virtual void visit(let_class &ref) {}
+  virtual void visit(new__class &ref) {}
+  virtual void visit(object_class &ref) {}
   virtual ~Visitor() = default;
 };
 
