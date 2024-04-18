@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <iostream>
 #include <unistd.h>
+#include <set>
 
 std::FILE *token_file = stdin;
 extern Classes parse_results;
@@ -49,12 +50,21 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
+    std::set<std::string> classes_names;
     GetName v;
-    std::cerr << "All classes' names: ";
     for(int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
       parse_results->nth(i)->accept(v);
-      std::cerr << v.name << ' ';
+      auto result = classes_names.insert(v.name);
+      if(!result.second) {
+        std::cerr << "semantic: class " << v.name << " already exists\n";
+      }
     }
+
+    std::cerr << "Classes:\n";
+    for(auto s : classes_names) {
+      std::cerr << s << ' ';
+    }
+    std::cerr << '\n';
 
     std::fclose(token_file);
   }
