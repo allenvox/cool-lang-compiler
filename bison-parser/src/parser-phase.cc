@@ -91,19 +91,33 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
-    std::set<std::string> classes_names;
-    GetName v;
+    std::set<std::string> classes_names, features_names;
+    GetName name_visitor;
     for (int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
-      parse_results->nth(i)->accept(v);
-      if (strcmp(v.name, "SELF_TYPE") == 0) {
+      parse_results->nth(i)->accept(name_visitor);
+      std::string class_name = name_visitor.name;
+      if (class_name == "SELF_TYPE") {
         semantic::error("SELF_TYPE redeclared!");
       }
-      auto result = classes_names.insert(v.name);
+      auto result = classes_names.insert(class_name);
       if(!result.second) {
-        semantic::error("class " + std::string(v.name) + " already exists!");
+        semantic::error("class " + std::string(class_name) + " already exists!");
       }
-    }
 
+      GetFeatures features_visitor;
+      parse_results->nth(i)->accept(features_visitor);
+      Features features = features_visitor.features;
+
+      for (int j = features->first(); features->more(i); i = features->next(i)) {
+        features->nth(i)->accept(name_visitor);
+        std::string feature_name = name_visitor.name;
+        result = features_names.insert(feature_name);
+        if(!result.second) {
+          semantic::error("feature " + std::string(feature_name) + " in " + class_name + " already exists!");
+        }
+      }
+      semantic::sequence_out("Features of " + class_name, features_names);
+    }
     semantic::sequence_out("Classes", classes_names);
 
     std::fclose(token_file);
