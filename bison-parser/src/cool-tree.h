@@ -178,6 +178,7 @@ public:
   void dump(std::ostream &stream, int n);
 
   friend class GetName;
+  friend class GetType;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -205,6 +206,7 @@ public:
   void dump(std::ostream &stream, int n);
 
   friend class GetName;
+  friend class GetType;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -786,7 +788,6 @@ public:
 class GetName : public Visitor {
 public:
   char *name;
-
   void visit(class__class &ref) override { name = ref.name->get_string(); }
   void visit(method_class &ref) override { name = ref.name->get_string(); }
   void visit(attr_class &ref) override { name = ref.name->get_string(); }
@@ -806,6 +807,13 @@ class GetFeatures : public Visitor {
 public:
   Features features;
   void visit(class__class &ref) override { features = ref.features; }
+};
+
+class GetType : public Visitor {
+public:
+  char *type;
+  void visit(method_class &ref) override { type = ref.return_type->get_string(); }
+  void visit(attr_class &ref) override { type = ref.type_decl->get_string(); }
 };
 
 // define the prototypes of the interface
