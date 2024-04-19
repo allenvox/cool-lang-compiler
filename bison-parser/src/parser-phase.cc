@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <set>
+#include <typeinfo>
 
 std::FILE *token_file = stdin;
 extern Classes parse_results;
@@ -56,12 +57,18 @@ int main(int argc, char **argv) {
       std::exit(1);
     }
 
-    /*
-    Symbol filename = stringtab.add_string("<builtin-classes>");
+    // Добавление в AST класса (узла) для встроенных типов
+    Symbol filename = stringtable.add_string("<builtin-classes>");
+
     Symbol Object = idtable.add_string("Object");
-    Class_ Object_class = class_(
+    Symbol Bool = idtable.add_string("Bool");
+    Symbol Int = idtable.add_string("Int");
+    Symbol String = idtable.add_string("String");
+    Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
+
+    /*Class_ Object_class = class_(
       Object,
-      No_class,
+      nil_Classes(),
       append_Features(
         append_Features(
           single_Features(method(cool_abort, nil_Formals(), Object, no_expr())),
@@ -91,7 +98,7 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
-    std::set<std::string> classes_names, features_names;
+    std::set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"}, features_names;
     GetName name_visitor;
     for (int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
       parse_results->nth(i)->accept(name_visitor);
@@ -101,7 +108,7 @@ int main(int argc, char **argv) {
       }
       auto result = classes_names.insert(class_name);
       if(!result.second) {
-        semantic::error("class " + std::string(class_name) + " already exists!");
+        semantic::error("class '" + std::string(class_name) + "' already exists!");
       }
 
       GetFeatures features_visitor;
@@ -113,10 +120,17 @@ int main(int argc, char **argv) {
         std::string feature_name = name_visitor.name;
         result = features_names.insert(feature_name);
         if(!result.second) {
-          semantic::error("feature " + std::string(feature_name) + " in " + class_name + " already exists!");
+          semantic::error("feature '" + std::string(feature_name) + "' in '" + class_name + "' already exists!");
+        }
+
+        GetType type_visitor;
+        features->nth(i)->accept(type_visitor);
+        std::string type = type_visitor.type;
+        if(classes_names.find(type) == classes_names.end()) {
+          semantic::error("unknown type '" + type + "' in " + feature_name);
         }
       }
-      semantic::sequence_out("Features of " + class_name, features_names);
+      semantic::sequence_out("Features of '" + class_name + '\'', features_names);
     }
     semantic::sequence_out("Classes", classes_names);
 
