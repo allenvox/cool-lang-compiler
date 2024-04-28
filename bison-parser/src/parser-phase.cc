@@ -4,8 +4,9 @@
 #include <cstdio>
 #include <iostream>
 #include <unistd.h>
-#include <set>
 #include <typeinfo>
+#include <unordered_map>
+#include <unordered_set>
 
 std::FILE *token_file = stdin;
 extern Classes parse_results;
@@ -28,12 +29,55 @@ void error(std::string error_msg) {
   std::cerr << "\tsemantic error: " << error_msg << '\n';
 }
 
-void sequence_out(std::string title, std::set<std::string> set) {
+void sequence_out(std::string title, std::unordered_set<std::string> set) {
   std::cerr << title << ": ";
   for(auto s : set) {
     std::cerr << s << ' ';
   }
   std::cerr << '\n';
+}
+
+bool detect_cycle(std::unordered_map<std::string, std::string> map) {
+  std::unordered_set<std::string> visited;
+  std::unordered_set<std::string> currentlyVisiting;
+
+  function<bool(const string&)> dfs = [&](const std::string& className) {
+      // If already visited, no need to visit again
+      if (visited.find(className) != visited.end()) {
+        return false;
+      }
+
+      // If currently visiting, loop detected
+      if (currentlyVisiting.find(className) != currentlyVisiting.end()) {
+        return true;
+      }
+
+      // Mark as currently visiting
+      currentlyVisiting.insert(className);
+
+      // Get parent class
+      auto it = hierarchy.find(className);
+      if (it != hierarchy.end()) {
+        // Recursive DFS call for parent class
+        if (dfs(it->second)) {
+          return true;
+        }
+      }
+
+      // Mark as visited and remove from currently visiting
+      visited.insert(className);
+      currentlyVisiting.erase(className);
+
+      return false;
+  };
+
+  // Iterate over each class in the hierarchy
+  for (const auto& entry : hierarchy) {
+    if (dfs(entry.first)) {
+      return true; // Loop detected
+    }
+  }
+  return false; // No loop detected
 }
 
 }; // namespace semantic
@@ -83,9 +127,9 @@ int main(int argc, char **argv) {
      * 1. Предварительно добавить в таблицу символов такие имена как:
      *    Main, main, Object, SELF_TYPE, ..., self, String, Int, Bool
      * 2. Создать вектор с именами всех классов
-     * 3. Добавить метод GetParent в класс class__class
+     *    3. Добавить метод GetParent в класс class__class
      * 4. Добавить в список классов (AST) builtin-классы: Int, String, ...
-     * 5. Создать таблицу методов, для каждого класса
+     *    5. Создать таблицу методов, для каждого класса
      */
 
     /*
@@ -98,7 +142,9 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
-    std::set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"}, features_names;
+    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"}, features_names;
+    std::unordered_map<std::string, std::string> classes_hierarchy;
+
     GetName name_visitor;
     for (int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
       parse_results->nth(i)->accept(name_visitor);
@@ -110,6 +156,10 @@ int main(int argc, char **argv) {
       if(!result.second) {
         semantic::error("class '" + std::string(class_name) + "' already exists!");
       }
+
+      GetParent parent_visitor;
+      parse_results->nth(i)->accept(parent_visitor);
+      classes_hierarchy[class_name] = std::string(parent_visitor.parent);
 
       GetFeatures features_visitor;
       parse_results->nth(i)->accept(features_visitor);
@@ -133,6 +183,10 @@ int main(int argc, char **argv) {
       semantic::sequence_out("Features of '" + class_name + '\'', features_names);
     }
     semantic::sequence_out("Classes", classes_names);
+
+    if (semantic::detect_cycle(classes_hierarchy)) {
+      semantic::error("loop detected in classes inheritance hierarchy");
+    }
 
     std::fclose(token_file);
   }
