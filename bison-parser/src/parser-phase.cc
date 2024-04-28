@@ -2,6 +2,7 @@
 #include "cool-tree.h"
 #include "utilities.h"
 #include <cstdio>
+#include <functional>
 #include <iostream>
 #include <unistd.h>
 #include <typeinfo>
@@ -37,24 +38,21 @@ void sequence_out(std::string title, std::unordered_set<std::string> set) {
   std::cerr << '\n';
 }
 
-bool detect_cycle(std::unordered_map<std::string, std::string> map) {
+bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   std::unordered_set<std::string> visited;
   std::unordered_set<std::string> currentlyVisiting;
 
-  function<bool(const string&)> dfs = [&](const std::string& className) {
+  std::function<bool(const std::string&)> dfs = [&](const std::string& className) {
       // If already visited, no need to visit again
       if (visited.find(className) != visited.end()) {
         return false;
       }
-
       // If currently visiting, loop detected
       if (currentlyVisiting.find(className) != currentlyVisiting.end()) {
         return true;
       }
-
       // Mark as currently visiting
       currentlyVisiting.insert(className);
-
       // Get parent class
       auto it = hierarchy.find(className);
       if (it != hierarchy.end()) {
@@ -63,11 +61,9 @@ bool detect_cycle(std::unordered_map<std::string, std::string> map) {
           return true;
         }
       }
-
       // Mark as visited and remove from currently visiting
       visited.insert(className);
       currentlyVisiting.erase(className);
-
       return false;
   };
 
