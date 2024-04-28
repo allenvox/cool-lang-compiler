@@ -149,6 +149,7 @@ public:
 
   friend class GetName;
   friend class GetFeatures;
+  friend class GetParent;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Class__SHARED_EXTRAS
@@ -814,6 +815,12 @@ public:
   char *type;
   void visit(method_class &ref) override { type = ref.return_type->get_string(); }
   void visit(attr_class &ref) override { type = ref.type_decl->get_string(); }
+};
+
+class GetParent : public Visitor {
+public:
+    char *parent;
+    void visit(class__class &ref) override { parent = ref.parent->get_string(); }
 };
 
 // define the prototypes of the interface
