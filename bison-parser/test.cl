@@ -2,9 +2,9 @@ class Main {
     a : Int;
     a : Int;
 
-    main(): Int {
+    main(b : Int): Int {
         {
-            let a: Int <- 4 in false; -- class field override
+            let b: Int <- 4 in false; -- class field override
             10;
         }
     };
