@@ -5,7 +5,6 @@
 #include <functional>
 #include <iostream>
 #include <unistd.h>
-#include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -106,7 +105,9 @@ int main(int argc, char **argv) {
     Symbol String = idtable.add_string("String");
     Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
 
-    /*Class_ Object_class = class_(
+    /* ???
+
+      Class_ Object_class = class_(
       Object,
       nil_Classes(),
       append_Features(
@@ -117,18 +118,10 @@ int main(int argc, char **argv) {
         single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))
       ),
       filename
-    );*/
-
-    /* TODO
-     * 1. Предварительно добавить в таблицу символов такие имена как:
-     *    Main, main, Object, SELF_TYPE, ..., self, String, Int, Bool
-     * 2. Создать вектор с именами всех классов
-     *    3. Добавить метод GetParent в класс class__class
-     * 4. Добавить в список классов (AST) builtin-классы: Int, String, ...
-     *    5. Создать таблицу методов, для каждого класса
+    );
      */
 
-    /*
+    /* // Symtables dumps
     ast_root->dump_with_types(std::cerr, 0);
     std::cerr << "# Identifiers:\n";
     idtable.print();
@@ -138,11 +131,12 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
-    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"}, features_names;
+    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"};
     std::unordered_map<std::string, std::string> classes_hierarchy;
 
     GetName name_visitor;
     for (int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
+      // Classes' unique non-std names check
       parse_results->nth(i)->accept(name_visitor);
       std::string class_name = name_visitor.name;
       if (class_name == "SELF_TYPE") {
@@ -153,33 +147,95 @@ int main(int argc, char **argv) {
         semantic::error("class '" + std::string(class_name) + "' already exists!");
       }
 
+      // Add class to inheritance hierarchy
       GetParent parent_visitor;
       parse_results->nth(i)->accept(parent_visitor);
       classes_hierarchy[class_name] = std::string(parent_visitor.parent);
 
+      // Get features
       GetFeatures features_visitor;
       parse_results->nth(i)->accept(features_visitor);
       Features features = features_visitor.features;
 
-      for (int j = features->first(); features->more(i); i = features->next(i)) {
-        features->nth(i)->accept(name_visitor);
+      // Loop through features
+      std::unordered_set<std::string> features_names;
+      for (int j = features->first(); features->more(j); j = features->next(j)) {
+        // Features' unique names check
+        features->nth(j)->accept(name_visitor);
         std::string feature_name = name_visitor.name;
         result = features_names.insert(feature_name);
         if(!result.second) {
           semantic::error("feature '" + std::string(feature_name) + "' in '" + class_name + "' already exists!");
         }
 
-        GetType type_visitor;
-        features->nth(i)->accept(type_visitor);
+        // Features' types existence check
+        GetType type_visitor; // methods - return_type, attrs - type_decl
+        features->nth(j)->accept(type_visitor);
         std::string type = type_visitor.type;
         if(classes_names.find(type) == classes_names.end()) {
           semantic::error("unknown type '" + type + "' in " + feature_name);
+        }
+
+        // Methods' formals
+        GetFormals formals_visitor;
+        features->nth(j)->accept(formals_visitor);
+        Formals formals = formals_visitor.formals;
+
+        if(formals_visitor.formals != nullptr) { // method_class check
+          std::unordered_set<std::string> formals_names; // Local formals' names
+
+          for (int k = formals->first(); formals->more(k); formals->next(k)) {
+            // Unique name check
+            formals->nth(k)->accept(name_visitor);
+            std::string formal_name = name_visitor.name;
+            result = formals_names.insert(formal_name);
+            if(!result.second) {
+              semantic::error("formal '" + std::string(formal_name) + "' in '" + feature_name + "' already exists!");
+            }
+
+            // Local formal type check
+            formals->nth(k)->accept(type_visitor);
+            type = type_visitor.type;
+            if(classes_names.find(type) == classes_names.end()) {
+              semantic::error("unknown type '" + type + "' in " + formal_name);
+            }
+
+            // Methods' expression
+            GetExpression expr_visitor;
+            formals->nth(k)->accept(expr_visitor);
+            Expression expr = expr_visitor.expr; // block_class
+
+            // Get Expressions from nested block
+            GetExpressions exprs_visitor;
+            expr->accept(exprs_visitor);
+            Expressions exprs = exprs_visitor.exprs;
+
+            // Nested let-variables check
+            for(int l = exprs->first(); exprs->more(l); exprs->next(l)) {
+              // Let-expr formal name check
+              Expression current = exprs->nth(l);
+              current->accept(name_visitor);
+              formal_name = name_visitor.name;
+              result = formals_names.insert(formal_name);
+              if(!result.second) {
+                semantic::error("formal '" + std::string(formal_name) + "' in '" + feature_name + "' already exists!");
+              }
+
+              // Let-expr formal type check
+              current->accept(type_visitor);
+              type = type_visitor.type;
+              if(classes_names.find(type) == classes_names.end()) {
+                semantic::error("unknown type '" + type + "' in " + formal_name);
+              }
+            }
+          }
         }
       }
       semantic::sequence_out("Features of '" + class_name + '\'', features_names);
     }
     semantic::sequence_out("Classes", classes_names);
 
+    // Inheritance hierarchy loop check
     if (semantic::detect_cycle(classes_hierarchy)) {
       semantic::error("loop detected in classes inheritance hierarchy");
     }
