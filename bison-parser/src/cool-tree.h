@@ -180,6 +180,8 @@ public:
 
   friend class GetName;
   friend class GetType;
+  friend class GetFormals;
+  friend class GetExpression;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -208,6 +210,7 @@ public:
 
   friend class GetName;
   friend class GetType;
+  friend class GetFormals;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -233,6 +236,7 @@ public:
   void dump(std::ostream &stream, int n);
 
   friend class GetName;
+  friend class GetType;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Formal_SHARED_EXTRAS
@@ -429,6 +433,9 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
+  friend class GetExpressions;
+  void accept(Visitor &v) override { v.visit(*this); }
+
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
 #endif
@@ -456,6 +463,7 @@ public:
   void dump(std::ostream &stream, int n);
 
   friend class GetName;
+  friend class GetType;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -793,15 +801,7 @@ public:
   void visit(method_class &ref) override { name = ref.name->get_string(); }
   void visit(attr_class &ref) override { name = ref.name->get_string(); }
   void visit(formal_class &ref) override { name = ref.name->get_string(); }
-  void visit(branch_class &ref) override { name = ref.name->get_string(); }
-  void visit(assign_class &ref) override { name = ref.name->get_string(); }
-  void visit(static_dispatch_class &ref) override {
-    name = ref.name->get_string();
-  }
-  void visit(dispatch_class &ref) override { name = ref.name->get_string(); }
   void visit(let_class &ref) override { name = ref.identifier->get_string(); }
-  void visit(new__class &ref) override { name = ref.type_name->get_string(); }
-  void visit(object_class &ref) override { name = ref.name->get_string(); }
 };
 
 class GetFeatures : public Visitor {
@@ -815,12 +815,33 @@ public:
   char *type;
   void visit(method_class &ref) override { type = ref.return_type->get_string(); }
   void visit(attr_class &ref) override { type = ref.type_decl->get_string(); }
+  void visit(formal_class &ref) override { type = ref.type_decl->get_string(); }
+  void visit(let_class &ref) override { type = ref.type_decl->get_string(); }
 };
 
 class GetParent : public Visitor {
 public:
     char *parent;
     void visit(class__class &ref) override { parent = ref.parent->get_string(); }
+};
+
+class GetFormals : public Visitor {
+public:
+    Formals formals = nullptr;
+    void visit(method_class &ref) override { formals = ref.formals; }
+    void visit(attr_class &ref) override { }
+};
+
+class GetExpression : public Visitor {
+public:
+    Expression expr = nullptr;
+    void visit(method_class &ref) override { expr = ref.expr; }
+};
+
+class GetExpressions : public Visitor {
+public:
+    Expressions exprs = nullptr;
+    void visit(block_class &ref) override { exprs = ref.body; }
 };
 
 // define the prototypes of the interface
