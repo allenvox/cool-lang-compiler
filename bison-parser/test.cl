@@ -3,7 +3,10 @@ class Main {
     a : Int;
 
     main(): Int {
-        10
+        {
+            let a: Int <- 4 in false; -- class field override
+            10;
+        }
     };
 
     main(): Int {
