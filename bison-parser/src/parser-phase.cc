@@ -31,7 +31,7 @@ void error(std::string error_msg) {
 
 void sequence_out(std::string title, std::unordered_set<std::string> set) {
   std::cerr << title << ": ";
-  for(auto s : set) {
+  for (auto s : set) {
     std::cerr << s << ' ';
   }
   std::cerr << '\n';
@@ -41,33 +41,34 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   std::unordered_set<std::string> visited;
   std::unordered_set<std::string> currentlyVisiting;
 
-  std::function<bool(const std::string&)> dfs = [&](const std::string& className) {
-      // If already visited, no need to visit again
-      if (visited.find(className) != visited.end()) {
-        return false;
-      }
-      // If currently visiting, loop detected
-      if (currentlyVisiting.find(className) != currentlyVisiting.end()) {
-        return true;
-      }
-      // Mark as currently visiting
-      currentlyVisiting.insert(className);
-      // Get parent class
-      auto it = hierarchy.find(className);
-      if (it != hierarchy.end()) {
-        // Recursive DFS call for parent class
-        if (dfs(it->second)) {
+  std::function<bool(const std::string &)> dfs =
+      [&](const std::string &className) {
+        // If already visited, no need to visit again
+        if (visited.find(className) != visited.end()) {
+          return false;
+        }
+        // If currently visiting, loop detected
+        if (currentlyVisiting.find(className) != currentlyVisiting.end()) {
           return true;
         }
-      }
-      // Mark as visited and remove from currently visiting
-      visited.insert(className);
-      currentlyVisiting.erase(className);
-      return false;
-  };
+        // Mark as currently visiting
+        currentlyVisiting.insert(className);
+        // Get parent class
+        auto it = hierarchy.find(className);
+        if (it != hierarchy.end()) {
+          // Recursive DFS call for parent class
+          if (dfs(it->second)) {
+            return true;
+          }
+        }
+        // Mark as visited and remove from currently visiting
+        visited.insert(className);
+        currentlyVisiting.erase(className);
+        return false;
+      };
 
   // Iterate over each class in the hierarchy
-  for (const auto& entry : hierarchy) {
+  for (const auto &entry : hierarchy) {
     if (dfs(entry.first)) {
       return true; // Loop detected
     }
@@ -81,7 +82,6 @@ int main(int argc, char **argv) {
   yy_flex_debug = 0;
   cool_yydebug = 0;
   lex_verbose = 0;
-
   for (int i = 1; i < argc; i++) {
     token_file = std::fopen(argv[i], "r");
     if (token_file == NULL) {
@@ -89,7 +89,6 @@ int main(int argc, char **argv) {
       std::exit(1);
     }
     curr_lineno = 1;
-
     cool_yyparse();
     if (parse_errors != 0) {
       std::cerr << "Error: parse errors\n";
@@ -121,7 +120,8 @@ int main(int argc, char **argv) {
     );
      */
 
-    /* // Symtables dumps
+    /*
+    // Symtables dumps
     ast_root->dump_with_types(std::cerr, 0);
     std::cerr << "# Identifiers:\n";
     idtable.print();
@@ -131,11 +131,13 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
-    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"};
+    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int",
+                                                  "String", "SELF_TYPE"};
     std::unordered_map<std::string, std::string> classes_hierarchy;
 
     GetName name_visitor;
-    for (int i = parse_results->first(); parse_results->more(i); i = parse_results->next(i)) {
+    for (int i = parse_results->first(); parse_results->more(i);
+         i = parse_results->next(i)) {
       // Classes' unique non-std names check
       parse_results->nth(i)->accept(name_visitor);
       std::string class_name = name_visitor.name;
@@ -143,8 +145,9 @@ int main(int argc, char **argv) {
         semantic::error("SELF_TYPE redeclared!");
       }
       auto result = classes_names.insert(class_name);
-      if(!result.second) {
-        semantic::error("class '" + std::string(class_name) + "' already exists!");
+      if (!result.second) {
+        semantic::error("class '" + std::string(class_name) +
+                        "' already exists!");
       }
 
       // Add class to inheritance hierarchy
@@ -159,20 +162,22 @@ int main(int argc, char **argv) {
 
       // Loop through features
       std::unordered_set<std::string> features_names;
-      for (int j = features->first(); features->more(j); j = features->next(j)) {
+      for (int j = features->first(); features->more(j);
+           j = features->next(j)) {
         // Features' unique names check
         features->nth(j)->accept(name_visitor);
         std::string feature_name = name_visitor.name;
         result = features_names.insert(feature_name);
-        if(!result.second) {
-          semantic::error("feature '" + std::string(feature_name) + "' in '" + class_name + "' already exists!");
+        if (!result.second) {
+          semantic::error("feature '" + std::string(feature_name) + "' in '" +
+                          class_name + "' already exists!");
         }
 
         // Features' types existence check
         GetType type_visitor; // methods - return_type, attrs - type_decl
         features->nth(j)->accept(type_visitor);
         std::string type = type_visitor.type;
-        if(classes_names.find(type) == classes_names.end()) {
+        if (classes_names.find(type) == classes_names.end()) {
           semantic::error("unknown type '" + type + "' in " + feature_name);
         }
 
@@ -181,29 +186,33 @@ int main(int argc, char **argv) {
         features->nth(j)->accept(formals_visitor);
         Formals formals = formals_visitor.formals;
 
-        if(formals_visitor.formals != nullptr) { // method_class check
+        if (formals_visitor.formals != nullptr) {        // method_class check
           std::unordered_set<std::string> formals_names; // Local formals' names
 
-          for (int k = formals->first(); formals->more(k); formals->next(k)) {
-            // Unique name check
+          for (int k = formals->first(); formals->more(k);
+               k = formals->next(k)) {
+            // Formal unique name check
             formals->nth(k)->accept(name_visitor);
             std::string formal_name = name_visitor.name;
             result = formals_names.insert(formal_name);
-            if(!result.second) {
-              semantic::error("formal '" + std::string(formal_name) + "' in '" + feature_name + "' already exists!");
+            if (!result.second) {
+              semantic::error("formal '" + std::string(formal_name) + "' in '" +
+                              feature_name + "' already exists!");
             }
 
             // Local formal type check
             formals->nth(k)->accept(type_visitor);
             type = type_visitor.type;
-            if(classes_names.find(type) == classes_names.end()) {
+            if (classes_names.find(type) == classes_names.end()) {
               semantic::error("unknown type '" + type + "' in " + formal_name);
             }
 
             // Methods' expression
             GetExpression expr_visitor;
-            formals->nth(k)->accept(expr_visitor);
-            Expression expr = expr_visitor.expr; // block_class
+            features->nth(j)->accept(expr_visitor);
+            Expression expr =
+                expr_visitor.expr; // only for block_class since let-formals
+                                   // aren't used without block
 
             // Get Expressions from nested block
             GetExpressions exprs_visitor;
@@ -211,29 +220,34 @@ int main(int argc, char **argv) {
             Expressions exprs = exprs_visitor.exprs;
 
             // Nested let-variables check
-            for(int l = exprs->first(); exprs->more(l); exprs->next(l)) {
+            for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
               // Let-expr formal name check
               Expression current = exprs->nth(l);
               current->accept(name_visitor);
               formal_name = name_visitor.name;
               result = formals_names.insert(formal_name);
-              if(!result.second) {
-                semantic::error("formal '" + std::string(formal_name) + "' in '" + feature_name + "' already exists!");
+
+              if (!result.second) {
+                semantic::error("formal '" + std::string(formal_name) +
+                                "' in '" + feature_name + "' from '" +
+                                class_name + "' already exists!");
               }
 
               // Let-expr formal type check
               current->accept(type_visitor);
               type = type_visitor.type;
-              if(classes_names.find(type) == classes_names.end()) {
-                semantic::error("unknown type '" + type + "' in " + formal_name);
+              if (classes_names.find(type) == classes_names.end()) {
+                semantic::error("unknown type '" + type + "' in " +
+                                formal_name);
               }
             }
           }
         }
       }
-      semantic::sequence_out("Features of '" + class_name + '\'', features_names);
+      semantic::sequence_out("Features (methods + attributes) of '" + class_name + '\'',
+                             features_names);
     }
-    semantic::sequence_out("Classes", classes_names);
+    semantic::sequence_out("Classes (types)", classes_names);
 
     // Inheritance hierarchy loop check
     if (semantic::detect_cycle(classes_hierarchy)) {
