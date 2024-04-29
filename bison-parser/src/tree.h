@@ -22,6 +22,7 @@ class dispatch_class;
 class let_class;
 class new__class;
 class object_class;
+class block_class;
 
 class Visitor {
 public:
@@ -36,6 +37,7 @@ public:
   virtual void visit(let_class &ref) {}
   virtual void visit(new__class &ref) {}
   virtual void visit(object_class &ref) {}
+  virtual void visit(block_class &ref) {}
   virtual ~Visitor() = default;
 };
 
