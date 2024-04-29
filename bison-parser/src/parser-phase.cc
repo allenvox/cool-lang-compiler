@@ -222,29 +222,32 @@ int main(int argc, char **argv) {
             // Nested let-variables check
             for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
               // Let-expr formal name check
-              Expression current = exprs->nth(l);
-              current->accept(name_visitor);
-              formal_name = name_visitor.name;
-              result = formals_names.insert(formal_name);
+              if (let_class *current =
+                      dynamic_cast<let_class *>(exprs->nth(l))) {
+                current->accept(name_visitor);
+                formal_name = name_visitor.name;
+                result = formals_names.insert(formal_name);
 
-              if (!result.second) {
-                semantic::error("formal '" + std::string(formal_name) +
-                                "' in '" + feature_name + "' from '" +
-                                class_name + "' already exists!");
-              }
+                if (!result.second) {
+                  semantic::error("formal '" + std::string(formal_name) +
+                                  "' in '" + feature_name + "' from '" +
+                                  class_name + "' already exists!");
+                }
 
-              // Let-expr formal type check
-              current->accept(type_visitor);
-              type = type_visitor.type;
-              if (classes_names.find(type) == classes_names.end()) {
-                semantic::error("unknown type '" + type + "' in " +
-                                formal_name);
+                // Let-expr formal type check
+                current->accept(type_visitor);
+                type = type_visitor.type;
+                if (classes_names.find(type) == classes_names.end()) {
+                  semantic::error("unknown type '" + type + "' in " +
+                                  formal_name);
+                }
               }
             }
           }
         }
       }
-      semantic::sequence_out("Features (methods + attributes) of '" + class_name + '\'',
+      semantic::sequence_out("Features (methods + attributes) of '" +
+                                 class_name + '\'',
                              features_names);
     }
     semantic::sequence_out("Classes (types)", classes_names);
