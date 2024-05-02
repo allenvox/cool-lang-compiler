@@ -25,8 +25,10 @@ extern int cool_yyparse();
 
 namespace semantic {
 
+int err_count = 0;
 void error(std::string error_msg) {
-  std::cerr << "\tsemantic error: " << error_msg << '\n';
+  std::cerr << "# semantic error: " << error_msg << '\n';
+  err_count++;
 }
 
 void sequence_out(std::string title, std::unordered_set<std::string> set) {
@@ -69,6 +71,13 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
 
   // Iterate over each class in the hierarchy
   for (const auto &entry : hierarchy) {
+
+    // Check parent existence
+    if (hierarchy.find(entry.second)) {
+      error("Parent of class '" + entry.first + "' ('" + entry.second + "') doesn't exist\n");
+      err_count++;
+    }
+
     if (dfs(entry.first)) {
       return true; // Loop detected
     }
@@ -97,15 +106,13 @@ int main(int argc, char **argv) {
 
     // Добавление в AST класса (узла) для встроенных типов
     Symbol filename = stringtable.add_string("<builtin-classes>");
-
     Symbol Object = idtable.add_string("Object");
     Symbol Bool = idtable.add_string("Bool");
     Symbol Int = idtable.add_string("Int");
     Symbol String = idtable.add_string("String");
     Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
 
-    /* ???
-
+    /*
       Class_ Object_class = class_(
       Object,
       nil_Classes(),
@@ -119,7 +126,6 @@ int main(int argc, char **argv) {
       filename
     );
      */
-
     /*
     // Symtables dumps
     ast_root->dump_with_types(std::cerr, 0);
@@ -131,19 +137,26 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
+    std::unordered_set<std::string> std_classes{"Object", "Bool", "Int", "String", "SELF_TYPE"};
     std::unordered_set<std::string> classes_names{"Object", "Bool", "Int",
                                                   "String", "SELF_TYPE"};
     std::unordered_map<std::string, std::string> classes_hierarchy;
-
     GetName name_visitor;
+
+    // Loop through classes
     for (int i = parse_results->first(); parse_results->more(i);
          i = parse_results->next(i)) {
-      // Classes' unique non-std names check
+
+      // Get current class name
       parse_results->nth(i)->accept(name_visitor);
       std::string class_name = name_visitor.name;
-      if (class_name == "SELF_TYPE") {
-        semantic::error("SELF_TYPE redeclared!");
+
+      // Check non-std class name
+      if (std_classes.find(class_name) != std_classes.end()) {
+        semantic::error("standard type " + class_name + " redeclared!");
       }
+
+      // Check unique class name
       auto result = classes_names.insert(class_name);
       if (!result.second) {
         semantic::error("class '" + std::string(class_name) +
@@ -155,42 +168,63 @@ int main(int argc, char **argv) {
       parse_results->nth(i)->accept(parent_visitor);
       classes_hierarchy[class_name] = std::string(parent_visitor.parent);
 
-      // Get features
+      // TODO
+      // check method overrides
+      // args types - not self
+      // check initializers
+
+      // Get class features
       GetFeatures features_visitor;
       parse_results->nth(i)->accept(features_visitor);
       Features features = features_visitor.features;
 
-      // Loop through features
       std::unordered_set<std::string> features_names;
+
+      // Loop through features
       for (int j = features->first(); features->more(j);
            j = features->next(j)) {
-        // Features' unique names check
+
+        // Get feature name
         features->nth(j)->accept(name_visitor);
         std::string feature_name = name_visitor.name;
+
+        // Check unique feature name
         result = features_names.insert(feature_name);
         if (!result.second) {
           semantic::error("feature '" + std::string(feature_name) + "' in '" +
                           class_name + "' already exists!");
         }
 
-        // Features' types existence check
-        GetType type_visitor; // methods - return_type, attrs - type_decl
+        // Get feature type: methods - return_type, attrs - type_decl
+        GetType type_visitor;
         features->nth(j)->accept(type_visitor);
+
+        // Type existence check
         std::string type = type_visitor.type;
         if (classes_names.find(type) == classes_names.end()) {
           semantic::error("unknown type '" + type + "' in " + feature_name);
         }
 
-        // Methods' formals
+        // SELF_TYPE check
+        if (type == "SELF_TYPE") {
+          semantic::error("can't use SELF_TYPE as a type inside class");
+        }
+
+        // Methods formals
         GetFormals formals_visitor;
         features->nth(j)->accept(formals_visitor);
         Formals formals = formals_visitor.formals;
 
-        if (formals_visitor.formals != nullptr) {        // method_class check
-          std::unordered_set<std::string> formals_names; // Local formals' names
+        // method_class check
+        if (formals_visitor.formals != nullptr) {
 
+          // Local formals names
+          std::unordered_set<std::string> formals_names;
+
+          // Loop through formals
           for (int k = formals->first(); formals->more(k);
                k = formals->next(k)) {
+
             // Formal unique name check
             formals->nth(k)->accept(name_visitor);
             std::string formal_name = name_visitor.name;
@@ -200,56 +234,78 @@ int main(int argc, char **argv) {
                               feature_name + "' already exists!");
             }
 
-            // Local formal type check
+            // Get formal type
             formals->nth(k)->accept(type_visitor);
             type = type_visitor.type;
+
+            // Check formal type
             if (classes_names.find(type) == classes_names.end()) {
               semantic::error("unknown type '" + type + "' in " + formal_name);
             }
 
-            // Methods' expression
+            // Get method expression
             GetExpression expr_visitor;
             features->nth(j)->accept(expr_visitor);
-            Expression expr =
-                expr_visitor.expr; // only for block_class since let-formals
-                                   // aren't used without block
+            Expression expr = expr_visitor.expr;
 
-            // Get Expressions from nested block
-            GetExpressions exprs_visitor;
-            expr->accept(exprs_visitor);
-            Expressions exprs = exprs_visitor.exprs;
+            // block_class check
+            if (expr->get_expr_type() == "block_class") {
 
-            // Nested let-variables check
-            for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
-              // Let-expr formal name check
-              if (let_class *current =
-                      dynamic_cast<let_class *>(exprs->nth(l))) {
-                current->accept(name_visitor);
-                formal_name = name_visitor.name;
-                result = formals_names.insert(formal_name);
+              // Get expressions from block
+              GetExpressions exprs_visitor;
+              expr->accept(exprs_visitor);
+              Expressions exprs = exprs_visitor.exprs;
 
-                if (!result.second) {
-                  semantic::error("formal '" + std::string(formal_name) +
-                                  "' in '" + feature_name + "' from '" +
-                                  class_name + "' already exists!");
-                }
+              // Block expressions check
+              for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
+                Expression current = exprs->nth(l);
 
-                // Let-expr formal type check
-                current->accept(type_visitor);
-                type = type_visitor.type;
-                if (classes_names.find(type) == classes_names.end()) {
-                  semantic::error("unknown type '" + type + "' in " +
-                                  formal_name);
+                // Let_class
+                if (current->get_expr_type() == "let_class") {
+
+                  // Get let-expr variable name
+                  current->accept(name_visitor);
+                  formal_name = name_visitor.name;
+
+                  // Check unique of nested formal
+                  result = formals_names.insert(formal_name);
+                  if (!result.second) {
+                    semantic::error("formal '" + std::string(formal_name) +
+                                    "' in '" + feature_name + "' from '" +
+                                    class_name + "' already exists!");
+                  }
+
+                  // Let-expr formal type check
+                  current->accept(type_visitor);
+                  type = type_visitor.type;
+                  if (classes_names.find(type) == classes_names.end()) {
+                    semantic::error("unknown type '" + type + "' in " +
+                                    formal_name);
+                  }
                 }
               }
             }
           }
         }
       }
+
+      // Check existence of method main in class Main
+      if (class_name == "Main" && features_names.find("main") == features_names.end()) {
+        semantic::error("No method 'main' in class 'Main'");
+      }
+
+      // Dump all features
       semantic::sequence_out("Features (methods + attributes) of '" +
                                  class_name + '\'',
                              features_names);
     }
+
+    // Check existence of class Main
+    if (classes_names.find("Main") == classes_names.end()) {
+      semantic::error("class Main doesn't exist");
+    }
+
+    // Dump all classes
     semantic::sequence_out("Classes (types)", classes_names);
 
     // Inheritance hierarchy loop check
@@ -259,5 +315,7 @@ int main(int argc, char **argv) {
 
     std::fclose(token_file);
   }
-  return 0;
+
+  std::cerr << "# Detected " << semantic::err_count << " semantic errors\n";
+  return semantic::err_count;
 }
