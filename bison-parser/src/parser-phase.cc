@@ -169,8 +169,7 @@ int main(int argc, char **argv) {
       classes_hierarchy[class_name] = std::string(parent_visitor.parent);
 
       // TODO
-      // check method overrides
-      // args types - not self
+      // check method overrides - parent method must have same signature
       // check initializers
 
       // Get class features
@@ -187,6 +186,11 @@ int main(int argc, char **argv) {
         // Get feature name
         features->nth(j)->accept(name_visitor);
         std::string feature_name = name_visitor.name;
+
+        // 'self' name check
+        if (feature_name == "self") {
+          semantic::error("can't use 'self' as feature name");
+        }
 
         // Check unique feature name
         result = features_names.insert(feature_name);
@@ -225,9 +229,16 @@ int main(int argc, char **argv) {
           for (int k = formals->first(); formals->more(k);
                k = formals->next(k)) {
 
-            // Formal unique name check
+            // Get formal name
             formals->nth(k)->accept(name_visitor);
             std::string formal_name = name_visitor.name;
+
+            // 'self' name check
+            if (formal_name == "self") {
+              semantic::error("can't use 'self' as formal name");
+            }
+
+            // Unique name check
             result = formals_names.insert(formal_name);
             if (!result.second) {
               semantic::error("formal '" + std::string(formal_name) + "' in '" +
@@ -266,6 +277,11 @@ int main(int argc, char **argv) {
                   // Get let-expr variable name
                   current->accept(name_visitor);
                   formal_name = name_visitor.name;
+
+                  // 'self' name check
+                  if (formal_name == "self") {
+                    semantic::error("can't use 'self' as new local variable name");
+                  }
 
                   // Check unique of nested formal
                   result = formals_names.insert(formal_name);
