@@ -1,3 +1,6 @@
+// TODO
+// check initializers (e.g. a: Int <- "wow" -- INCORRECT)
+
 #include "cool-parse.h"
 #include "cool-tree.h"
 #include "utilities.h"
@@ -85,6 +88,65 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   return false; // No loop detected
 }
 
+bool CheckSignatures(method_class m1, method_class m2) {
+  // Get return types
+  GetType m1_type_visitor;
+  GetType m2_type_visitor;
+  m1.accept(m1_type_visitor);
+  m2.accept(m2_type_visitor);
+  // Check methods return types
+  if (m1_type_visitor.type != m2_type_visitor.type) {
+    return false;
+  }
+
+  // Get formals
+  GetFormals m1_formals_visitor;
+  GetFormals m2_formals_visitor;
+  m1.accept(m1_formals_visitor);
+  m2.accept(m2_formals_visitor);
+  Formals m1_formals = m1_formals_visitor.formals;
+  Formals m2_formals = m2_formals_visitor.formals;
+
+  // Check formals count
+  if (m1_formals->len() != m2_formals->len()) {
+    return false;
+  }
+
+  // Loop through formals
+  for (int i = m1_formals->first(); m1_formals->more(i);
+       i = m1_formals->next(i)) {
+    formal_class m1_formal = dynamic_cast<formal_class>(m1_formals->nth(i));
+    formal_class m2_formal = dynamic_cast<formal_class>(m2_formals->nth(i));
+
+    // Get formal names
+    GetName m1_formal_name_visitor;
+    GetName m2_formal_name_visitor;
+    m1_formal.accept(m1_formal_name_visitor);
+    m2_formal.accept(m2_formal_name_visitor);
+    std::string name1 = m1_formal_name_visitor.name;
+    std::string name2 = m2_formal_name_visitor.name;
+    // Check formal names
+    if (name1 != name2) {
+      return false;
+    }
+
+    // Get formal types
+    GetType m1_formal_type_visitor;
+    GetType m2_formal_type_visitor;
+    m1_formal.accept(m1_formal_type_visitor);
+    m2_formal.accept(m2_formal_type_visitor);
+    std::string type1 = m1_formal_type_visitor.type;
+    std::string type2 = m2_formal_type_visitor.type;
+    // Check formal types
+    if (type1 != type2) {
+      return false;
+    }
+  }
+
+  // All good - signatures are the same
+  return true;
+}
+
 }; // namespace semantic
 
 int main(int argc, char **argv) {
@@ -112,7 +174,7 @@ int main(int argc, char **argv) {
     Symbol String = idtable.add_string("String");
     Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
 
-    /*
+    /* ???
       Class_ Object_class = class_(
       Object,
       nil_Classes(),
@@ -126,6 +188,7 @@ int main(int argc, char **argv) {
       filename
     );
      */
+
     /*
     // Symtables dumps
     ast_root->dump_with_types(std::cerr, 0);
@@ -166,11 +229,7 @@ int main(int argc, char **argv) {
       // Add class to inheritance hierarchy
       GetParent parent_visitor;
       parse_results->nth(i)->accept(parent_visitor);
-      classes_hierarchy[class_name] = std::string(parent_visitor.parent);
-
-      // TODO
-      // check method overrides - parent method must have same signature
-      // check initializers
+      classes_hierarchy[class_name] = std::string(parent_visitor.name);
 
       // Get class features
       GetFeatures features_visitor;
@@ -183,8 +242,11 @@ int main(int argc, char **argv) {
       for (int j = features->first(); features->more(j);
            j = features->next(j)) {
 
+        // Current feature
+        Feature_class feature = features->nth(j);
+
         // Get feature name
-        features->nth(j)->accept(name_visitor);
+        feature->accept(name_visitor);
         std::string feature_name = name_visitor.name;
 
         // 'self' name check
@@ -201,7 +263,7 @@ int main(int argc, char **argv) {
 
         // Get feature type: methods - return_type, attrs - type_decl
         GetType type_visitor;
-        features->nth(j)->accept(type_visitor);
+        feature->accept(type_visitor);
 
         // Type existence check
         std::string type = type_visitor.type;
@@ -214,13 +276,46 @@ int main(int argc, char **argv) {
           semantic::error("can't use SELF_TYPE as a type inside class");
         }
 
-        // Methods formals
-        GetFormals formals_visitor;
-        features->nth(j)->accept(formals_visitor);
-        Formals formals = formals_visitor.formals;
+        if (feature->get_feature_type() == "method_class") {
+          // Methods formals
+          GetFormals formals_visitor;
+          feature->accept(formals_visitor);
+          Formals formals = formals_visitor.formals;
 
-        // method_class check
-        if (formals_visitor.formals != nullptr) {
+          // Check method overrides - must have same signature
+          if (parent_visitor.name != "Object") {
+
+            // Get parent class features
+            GetFeatures parent_features_visitor;
+            parent_visitor.parent->accept(parent_features_visitor);
+            Features parent_features = parent_features_visitor.features;
+
+            // Loop through parent features
+            for (int a = parent_features->first(); parent_features->more(a);
+                 a = parent_features->next(a)) {
+              Feature_class parent_feature = parent_features->nth(a);
+
+              // Get feature name
+              parent_feature->accept(name_visitor);
+              std::string parent_feature_name = name_visitor.name;
+
+              // If there is parent feature with same name
+              if (parent_feature_name == feature_name) {
+
+                // Check if feature is same type
+                if (parent_feature->get_feature_type() != feature->get_feature_type()) {
+                  semantic::error("wrong override of feature '" + feature_name + "' from class '" + parent_visitor.name + "' in class '" + class_name + "'");
+                }
+
+                // Check method signatures
+                method_class cur_method = dynamic_cast<method_class*>(feature);
+                method_class parent_method = dynamic_cast<method_class*>(parent_feature);
+                if (!semantic::CheckSignatures(cur_method, parent_method)) {
+                  semantic::error("'" + feature_name + "' method from class '" + parent_visitor.name + "' doesn't match override version of it in class '" + class_name + "'");
+                }
+              }
+            }
+          }
 
           // Local formals names
           std::unordered_set<std::string> formals_names;
