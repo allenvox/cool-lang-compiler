@@ -922,8 +922,13 @@ public:
 
 class GetParent : public Visitor {
 public:
-    char *parent;
-    void visit(class__class &ref) override { parent = ref.parent->get_string(); }
+    Symbol parent;
+    char *name;
+
+    void visit(class__class &ref) override {
+      parent = ref.parent;
+      name = ref.parent->get_string();
+    }
 
     bool isAncestor(class__class base, class__class x) {
       if (x.name->get_string() == "Object") {
