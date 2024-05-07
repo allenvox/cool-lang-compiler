@@ -1,9 +1,8 @@
 -- Hello world program in Cool-lang
 
-class Main inherits IO {
-  main() : Object {
-    out_string("Hello, \
-                \"world\"\0\n")
+class Main {
+  main() : Int {
+    42
   };
 };
 
