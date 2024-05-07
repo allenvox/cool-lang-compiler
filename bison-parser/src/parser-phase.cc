@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
       filename
     );
     */
-    semantic::dump_symtables(idtable, stringtable, inttable);
+    //semantic::dump_symtables(idtable, stringtable, inttable);
 
     std::unordered_set<std::string> std_classes{"Object", "Bool", "Int",
                                                 "String", "SELF_TYPE"};
