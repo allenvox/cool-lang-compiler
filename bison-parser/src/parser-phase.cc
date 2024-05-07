@@ -77,7 +77,8 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
 
     // Check parent existence
     if (hierarchy.find(entry.second) != hierarchy.end()) {
-      error("Parent of class '" + entry.first + "' ('" + entry.second + "') doesn't exist\n");
+      error("Parent of class '" + entry.first + "' ('" + entry.second +
+            "') doesn't exist\n");
       err_count++;
     }
 
@@ -88,7 +89,7 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   return false; // No loop detected
 }
 
-bool CheckSignatures(method_class* m1, method_class* m2) {
+bool CheckSignatures(method_class *m1, method_class *m2) {
   // Get return types
   GetType m1_type_visitor;
   GetType m2_type_visitor;
@@ -115,8 +116,8 @@ bool CheckSignatures(method_class* m1, method_class* m2) {
   // Loop through formals
   for (int i = m1_formals->first(); m1_formals->more(i);
        i = m1_formals->next(i)) {
-    formal_class *m1_formal = dynamic_cast<formal_class*>(m1_formals->nth(i));
-    formal_class *m2_formal = dynamic_cast<formal_class*>(m2_formals->nth(i));
+    formal_class *m1_formal = dynamic_cast<formal_class *>(m1_formals->nth(i));
+    formal_class *m2_formal = dynamic_cast<formal_class *>(m2_formals->nth(i));
 
     // Get formal names
     GetName m1_formal_name_visitor;
@@ -148,10 +149,9 @@ bool CheckSignatures(method_class* m1, method_class* m2) {
 }
 
 class__class *FindClass(std::string name, Classes classes) {
-  for (int i = classes->first(); classes->more(i);
-       i = classes->next(i)) {
+  for (int i = classes->first(); classes->more(i); i = classes->next(i)) {
     GetName name_visitor;
-    class__class* cur_class = dynamic_cast<class__class*>(classes->nth(i));
+    class__class *cur_class = dynamic_cast<class__class *>(classes->nth(i));
     cur_class->accept(name_visitor);
     if (name == name_visitor.name) {
       return cur_class;
@@ -213,7 +213,8 @@ int main(int argc, char **argv) {
     inttable.print();
      */
 
-    std::unordered_set<std::string> std_classes{"Object", "Bool", "Int", "String", "SELF_TYPE"};
+    std::unordered_set<std::string> std_classes{"Object", "Bool", "Int",
+                                                "String", "SELF_TYPE"};
     std::unordered_set<std::string> classes_names{"Object", "Bool", "Int",
                                                   "String", "SELF_TYPE"};
     std::unordered_map<std::string, std::string> classes_hierarchy;
@@ -300,34 +301,52 @@ int main(int argc, char **argv) {
 
             // Get parent class features
             GetFeatures parent_features_visitor;
-            class__class *parent = semantic::FindClass(std::string(parent_visitor.parent->get_string()), parse_results);
-            parent->accept(parent_features_visitor);
-            Features parent_features = parent_features_visitor.features;
+            class__class *parent = semantic::FindClass(
+                std::string(parent_visitor.parent->get_string()),
+                parse_results);
+            if (parent) {
+              parent->accept(parent_features_visitor);
+              Features parent_features = parent_features_visitor.features;
 
-            // Loop through parent features
-            for (int a = parent_features->first(); parent_features->more(a);
-                 a = parent_features->next(a)) {
-              Feature parent_feature = parent_features->nth(a);
+              // Loop through parent features
+              for (int a = parent_features->first(); parent_features->more(a);
+                   a = parent_features->next(a)) {
+                Feature parent_feature = parent_features->nth(a);
 
-              // Get feature name
-              parent_feature->accept(name_visitor);
-              std::string parent_feature_name = name_visitor.name;
+                // Get feature name
+                parent_feature->accept(name_visitor);
+                std::string parent_feature_name = name_visitor.name;
 
-              // If there is parent feature with same name
-              if (parent_feature_name == feature_name) {
+                // If there is parent feature with same name
+                if (parent_feature_name == feature_name) {
 
-                // Check if feature is same type
-                if (parent_feature->get_feature_type() != feature->get_feature_type()) {
-                  semantic::error("wrong override of feature '" + feature_name + "' from class '" + parent_visitor.name + "' in class '" + class_name + "'");
-                }
+                  // Check if feature is same type
+                  if (parent_feature->get_feature_type() !=
+                      feature->get_feature_type()) {
+                    semantic::error("wrong override of feature '" +
+                                    feature_name + "' from class '" +
+                                    parent_visitor.name + "' in class '" +
+                                    class_name + "'");
+                  }
 
-                // Check method signatures
-                method_class* cur_method = dynamic_cast<method_class*>(feature);
-                method_class* parent_method = dynamic_cast<method_class*>(parent_feature);
-                if (!semantic::CheckSignatures(cur_method, parent_method)) {
-                  semantic::error("'" + feature_name + "' method from class '" + parent_visitor.name + "' doesn't match override version of it in class '" + class_name + "'");
+                  // Check method signatures
+                  method_class *cur_method =
+                      dynamic_cast<method_class *>(feature);
+                  method_class *parent_method =
+                      dynamic_cast<method_class *>(parent_feature);
+                  if (!semantic::CheckSignatures(cur_method, parent_method)) {
+                    semantic::error(
+                        "'" + feature_name + "' method from class '" +
+                        parent_visitor.name +
+                        "' doesn't match override version of it in class '" +
+                        class_name + "'");
+                  }
                 }
               }
+            } else {
+              semantic::error("parent class '" +
+                              std::string(parent_visitor.name) +
+                              "' of class '" + class_name + "' doesn't exist");
             }
           }
 
@@ -389,7 +408,8 @@ int main(int argc, char **argv) {
 
                   // 'self' name check
                   if (formal_name == "self") {
-                    semantic::error("can't use 'self' as new local variable name");
+                    semantic::error(
+                        "can't use 'self' as new local variable name");
                   }
 
                   // Check unique of nested formal
@@ -415,7 +435,8 @@ int main(int argc, char **argv) {
       }
 
       // Check existence of method main in class Main
-      if (class_name == "Main" && features_names.find("main") == features_names.end()) {
+      if (class_name == "Main" &&
+          features_names.find("main") == features_names.end()) {
         semantic::error("No method 'main' in class 'Main'");
       }
 
