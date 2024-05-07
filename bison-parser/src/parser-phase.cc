@@ -76,7 +76,7 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   for (const auto &entry : hierarchy) {
 
     // Check parent existence
-    if (hierarchy.find(entry.second)) {
+    if (hierarchy.find(entry.second) != hierarchy.end()) {
       error("Parent of class '" + entry.first + "' ('" + entry.second + "') doesn't exist\n");
       err_count++;
     }
@@ -88,12 +88,12 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   return false; // No loop detected
 }
 
-bool CheckSignatures(method_class m1, method_class m2) {
+bool CheckSignatures(method_class* m1, method_class* m2) {
   // Get return types
   GetType m1_type_visitor;
   GetType m2_type_visitor;
-  m1.accept(m1_type_visitor);
-  m2.accept(m2_type_visitor);
+  m1->accept(m1_type_visitor);
+  m2->accept(m2_type_visitor);
   // Check methods return types
   if (m1_type_visitor.type != m2_type_visitor.type) {
     return false;
@@ -102,8 +102,8 @@ bool CheckSignatures(method_class m1, method_class m2) {
   // Get formals
   GetFormals m1_formals_visitor;
   GetFormals m2_formals_visitor;
-  m1.accept(m1_formals_visitor);
-  m2.accept(m2_formals_visitor);
+  m1->accept(m1_formals_visitor);
+  m2->accept(m2_formals_visitor);
   Formals m1_formals = m1_formals_visitor.formals;
   Formals m2_formals = m2_formals_visitor.formals;
 
@@ -115,14 +115,14 @@ bool CheckSignatures(method_class m1, method_class m2) {
   // Loop through formals
   for (int i = m1_formals->first(); m1_formals->more(i);
        i = m1_formals->next(i)) {
-    formal_class m1_formal = dynamic_cast<formal_class>(m1_formals->nth(i));
-    formal_class m2_formal = dynamic_cast<formal_class>(m2_formals->nth(i));
+    formal_class *m1_formal = dynamic_cast<formal_class*>(m1_formals->nth(i));
+    formal_class *m2_formal = dynamic_cast<formal_class*>(m2_formals->nth(i));
 
     // Get formal names
     GetName m1_formal_name_visitor;
     GetName m2_formal_name_visitor;
-    m1_formal.accept(m1_formal_name_visitor);
-    m2_formal.accept(m2_formal_name_visitor);
+    m1_formal->accept(m1_formal_name_visitor);
+    m2_formal->accept(m2_formal_name_visitor);
     std::string name1 = m1_formal_name_visitor.name;
     std::string name2 = m2_formal_name_visitor.name;
     // Check formal names
@@ -133,8 +133,8 @@ bool CheckSignatures(method_class m1, method_class m2) {
     // Get formal types
     GetType m1_formal_type_visitor;
     GetType m2_formal_type_visitor;
-    m1_formal.accept(m1_formal_type_visitor);
-    m2_formal.accept(m2_formal_type_visitor);
+    m1_formal->accept(m1_formal_type_visitor);
+    m2_formal->accept(m2_formal_type_visitor);
     std::string type1 = m1_formal_type_visitor.type;
     std::string type2 = m2_formal_type_visitor.type;
     // Check formal types
@@ -145,6 +145,19 @@ bool CheckSignatures(method_class m1, method_class m2) {
 
   // All good - signatures are the same
   return true;
+}
+
+class__class *FindClass(std::string name, Classes classes) {
+  for (int i = classes->first(); classes->more(i);
+       i = classes->next(i)) {
+    GetName name_visitor;
+    class__class* cur_class = dynamic_cast<class__class*>(classes->nth(i));
+    cur_class->accept(name_visitor);
+    if (name == name_visitor.name) {
+      return cur_class;
+    }
+  }
+  return nullptr;
 }
 
 }; // namespace semantic
@@ -243,7 +256,7 @@ int main(int argc, char **argv) {
            j = features->next(j)) {
 
         // Current feature
-        Feature_class feature = features->nth(j);
+        Feature feature = features->nth(j);
 
         // Get feature name
         feature->accept(name_visitor);
@@ -283,17 +296,18 @@ int main(int argc, char **argv) {
           Formals formals = formals_visitor.formals;
 
           // Check method overrides - must have same signature
-          if (parent_visitor.name != "Object") {
+          if (std::string(parent_visitor.name) != "Object") {
 
             // Get parent class features
             GetFeatures parent_features_visitor;
-            parent_visitor.parent->accept(parent_features_visitor);
+            class__class *parent = semantic::FindClass(std::string(parent_visitor.parent->get_string()), parse_results);
+            parent->accept(parent_features_visitor);
             Features parent_features = parent_features_visitor.features;
 
             // Loop through parent features
             for (int a = parent_features->first(); parent_features->more(a);
                  a = parent_features->next(a)) {
-              Feature_class parent_feature = parent_features->nth(a);
+              Feature parent_feature = parent_features->nth(a);
 
               // Get feature name
               parent_feature->accept(name_visitor);
@@ -308,8 +322,8 @@ int main(int argc, char **argv) {
                 }
 
                 // Check method signatures
-                method_class cur_method = dynamic_cast<method_class*>(feature);
-                method_class parent_method = dynamic_cast<method_class*>(parent_feature);
+                method_class* cur_method = dynamic_cast<method_class*>(feature);
+                method_class* parent_method = dynamic_cast<method_class*>(parent_feature);
                 if (!semantic::CheckSignatures(cur_method, parent_method)) {
                   semantic::error("'" + feature_name + "' method from class '" + parent_visitor.name + "' doesn't match override version of it in class '" + class_name + "'");
                 }
