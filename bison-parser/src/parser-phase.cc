@@ -74,14 +74,12 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
 
   // Iterate over each class in the hierarchy
   for (const auto &entry : hierarchy) {
-
     // Check parent existence
-    if (hierarchy.find(entry.second) != hierarchy.end()) {
-      error("Parent of class '" + entry.first + "' ('" + entry.second +
-            "') doesn't exist\n");
-      err_count++;
+    if (hierarchy.find(entry.second) == hierarchy.end() &&
+        entry.second != "Object") {
+      error("parent of class '" + entry.first + "' ('" + entry.second +
+            "') doesn't exist");
     }
-
     if (dfs(entry.first)) {
       return true; // Loop detected
     }
@@ -160,6 +158,16 @@ class__class *FindClass(std::string name, Classes classes) {
   return nullptr;
 }
 
+void dump_symtables(IdTable idtable, StrTable strtable, IntTable inttable) {
+  ast_root->dump_with_types(std::cerr, 0);
+  std::cerr << "# Identifiers:\n";
+  idtable.print();
+  std::cerr << "# Strings:\n";
+  stringtable.print();
+  std::cerr << "# Integers:\n";
+  inttable.print();
+}
+
 }; // namespace semantic
 
 int main(int argc, char **argv) {
@@ -186,7 +194,6 @@ int main(int argc, char **argv) {
     Symbol Int = idtable.add_string("Int");
     Symbol String = idtable.add_string("String");
     Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
-
     /* ???
       Class_ Object_class = class_(
       Object,
@@ -200,18 +207,8 @@ int main(int argc, char **argv) {
       ),
       filename
     );
-     */
-
-    /*
-    // Symtables dumps
-    ast_root->dump_with_types(std::cerr, 0);
-    std::cerr << "# Identifiers:\n";
-    idtable.print();
-    std::cerr << "# Strings:\n";
-    stringtable.print();
-    std::cerr << "# Integers:\n";
-    inttable.print();
-     */
+    */
+    semantic::dump_symtables(idtable, stringtable, inttable);
 
     std::unordered_set<std::string> std_classes{"Object", "Bool", "Int",
                                                 "String", "SELF_TYPE"};
@@ -243,7 +240,15 @@ int main(int argc, char **argv) {
       // Add class to inheritance hierarchy
       GetParent parent_visitor;
       parse_results->nth(i)->accept(parent_visitor);
-      classes_hierarchy[class_name] = std::string(parent_visitor.name);
+      std::string parent_name = parent_visitor.name;
+      classes_hierarchy[class_name] = parent_name;
+
+      // Check that parent class isn't builtin (except 'Object')
+      if (std_classes.find(parent_name) != std_classes.end() &&
+          parent_name != "Object") {
+        semantic::error("class '" + class_name + "': can't use parent class '" +
+                        parent_name + "' (builtin)");
+      }
 
       // Get class features
       GetFeatures features_visitor;
@@ -297,13 +302,11 @@ int main(int argc, char **argv) {
           Formals formals = formals_visitor.formals;
 
           // Check method overrides - must have same signature
-          if (std::string(parent_visitor.name) != "Object") {
-
+          if (std::string(parent_name) != "Object") {
             // Get parent class features
             GetFeatures parent_features_visitor;
-            class__class *parent = semantic::FindClass(
-                std::string(parent_visitor.parent->get_string()),
-                parse_results);
+            class__class *parent =
+                semantic::FindClass(parent_name, parse_results);
             if (parent) {
               parent->accept(parent_features_visitor);
               Features parent_features = parent_features_visitor.features;
@@ -325,8 +328,8 @@ int main(int argc, char **argv) {
                       feature->get_feature_type()) {
                     semantic::error("wrong override of feature '" +
                                     feature_name + "' from class '" +
-                                    parent_visitor.name + "' in class '" +
-                                    class_name + "'");
+                                    parent_name + "' in class '" + class_name +
+                                    "'");
                   }
 
                   // Check method signatures
@@ -337,15 +340,14 @@ int main(int argc, char **argv) {
                   if (!semantic::CheckSignatures(cur_method, parent_method)) {
                     semantic::error(
                         "'" + feature_name + "' method from class '" +
-                        parent_visitor.name +
+                        parent_name +
                         "' doesn't match override version of it in class '" +
                         class_name + "'");
                   }
                 }
               }
             } else {
-              semantic::error("parent class '" +
-                              std::string(parent_visitor.name) +
+              semantic::error("parent class '" + std::string(parent_name) +
                               "' of class '" + class_name + "' doesn't exist");
             }
           }
