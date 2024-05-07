@@ -297,9 +297,7 @@ public:
   friend class GetName;
   void accept(Visitor &v) override { v.visit(*this); }
 
-  std::string get_expr_type() override {
-    return "assign_class";
-  }
+  std::string get_expr_type() override { return "assign_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -330,9 +328,7 @@ public:
   friend class GetName;
   void accept(Visitor &v) override { v.visit(*this); }
 
-  std::string get_expr_type() override {
-    return "static_dispatch_class";
-  }
+  std::string get_expr_type() override { return "static_dispatch_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -361,9 +357,7 @@ public:
   friend class GetName;
   void accept(Visitor &v) override { v.visit(*this); }
 
-  std::string get_expr_type() override {
-    return "dispatch_class";
-  }
+  std::string get_expr_type() override { return "dispatch_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -389,9 +383,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-  std::string get_expr_type() override {
-    return "cond_class";
-  }
+  std::string get_expr_type() override { return "cond_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -415,9 +407,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-  std::string get_expr_type() override {
-    return "loop_class";
-  }
+  std::string get_expr_type() override { return "loop_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -441,9 +431,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "typcase_class";
-    }
+  std::string get_expr_type() override { return "typcase_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -466,9 +454,7 @@ public:
   friend class GetExpressions;
   void accept(Visitor &v) override { v.visit(*this); }
 
-    std::string get_expr_type() override {
-      return "block_class";
-    }
+  std::string get_expr_type() override { return "block_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -500,9 +486,7 @@ public:
   friend class GetType;
   void accept(Visitor &v) override { v.visit(*this); }
 
-    std::string get_expr_type() override {
-      return "let_class";
-    }
+  std::string get_expr_type() override { return "let_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -526,9 +510,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "plus_class";
-    }
+  std::string get_expr_type() override { return "plus_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -552,9 +534,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "sub_class";
-    }
+  std::string get_expr_type() override { return "sub_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -578,9 +558,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "mul_class";
-    }
+  std::string get_expr_type() override { return "mul_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -604,9 +582,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "divide_class";
-    }
+  std::string get_expr_type() override { return "divide_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -626,9 +602,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "neg_class";
-    }
+  std::string get_expr_type() override { return "neg_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -652,9 +626,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "lt_class";
-    }
+  std::string get_expr_type() override { return "lt_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -678,9 +650,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "eq_class";
-    }
+  std::string get_expr_type() override { return "eq_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -704,9 +674,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "leq_class";
-    }
+  std::string get_expr_type() override { return "leq_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -726,9 +694,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "comp_class";
-    }
+  std::string get_expr_type() override { return "comp_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -748,9 +714,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "int_const_class";
-    }
+  std::string get_expr_type() override { return "int_const_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -770,9 +734,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "bool_const_class";
-    }
+  std::string get_expr_type() override { return "bool_const_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -792,9 +754,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "string_const_class";
-    }
+  std::string get_expr_type() override { return "string_const_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -817,9 +777,7 @@ public:
   friend class GetName;
   void accept(Visitor &v) override { v.visit(*this); }
 
-    std::string get_expr_type() override {
-      return "new__class";
-    }
+  std::string get_expr_type() override { return "new__class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -839,9 +797,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "isvoid_class";
-    }
+  std::string get_expr_type() override { return "isvoid_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -859,9 +815,7 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
-    std::string get_expr_type() override {
-      return "no_expr_class";
-    }
+  std::string get_expr_type() override { return "no_expr_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -884,9 +838,7 @@ public:
   friend class GetName;
   void accept(Visitor &v) override { v.visit(*this); }
 
-    std::string get_expr_type() override {
-      return "object_class";
-    }
+  std::string get_expr_type() override { return "object_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
   Expression_SHARED_EXTRAS
@@ -915,7 +867,9 @@ public:
 class GetType : public Visitor {
 public:
   char *type;
-  void visit(method_class &ref) override { type = ref.return_type->get_string(); }
+  void visit(method_class &ref) override {
+    type = ref.return_type->get_string();
+  }
   void visit(attr_class &ref) override { type = ref.type_decl->get_string(); }
   void visit(formal_class &ref) override { type = ref.type_decl->get_string(); }
   void visit(let_class &ref) override { type = ref.type_decl->get_string(); }
@@ -923,42 +877,43 @@ public:
 
 class GetParent : public Visitor {
 public:
-    Symbol parent;
-    char *name;
+  Symbol parent;
+  char *name;
 
-    void visit(class__class &ref) override {
-      parent = ref.parent;
-      name = ref.parent->get_string();
-    }
+  void visit(class__class &ref) override {
+    parent = ref.parent;
+    name = ref.parent->get_string();
+  }
 
-    bool isAncestor(std::string base, std::string x, std::unordered_map<std::string, std::string> hierarchy) {
-      if (x == "Object") {
-        return false;
-      }
-      if (x == base) {
-        return true;
-      }
-      return isAncestor(base, hierarchy.at(x), hierarchy);
+  bool isAncestor(std::string base, std::string x,
+                  std::unordered_map<std::string, std::string> hierarchy) {
+    if (x == "Object") {
+      return false;
     }
+    if (x == base) {
+      return true;
+    }
+    return isAncestor(base, hierarchy.at(x), hierarchy);
+  }
 };
 
 class GetFormals : public Visitor {
 public:
-    Formals formals = nullptr;
-    void visit(method_class &ref) override { formals = ref.formals; }
-    void visit(attr_class &ref) override { }
+  Formals formals = nullptr;
+  void visit(method_class &ref) override { formals = ref.formals; }
+  void visit(attr_class &ref) override {}
 };
 
 class GetExpression : public Visitor {
 public:
-    Expression expr = nullptr;
-    void visit(method_class &ref) override { expr = ref.expr; }
+  Expression expr = nullptr;
+  void visit(method_class &ref) override { expr = ref.expr; }
 };
 
 class GetExpressions : public Visitor {
 public:
-    Expressions exprs = nullptr;
-    void visit(block_class &ref) override { exprs = ref.body; }
+  Expressions exprs = nullptr;
+  void visit(block_class &ref) override { exprs = ref.body; }
 };
 
 // define the prototypes of the interface
