@@ -10,6 +10,7 @@
 #include "cool-tree.handcode.h"
 #include "tree.h"
 #include <string>
+#include <unordered_map>
 
 // define the class for phylum
 // define simple phylum - Program
@@ -930,16 +931,14 @@ public:
       name = ref.parent->get_string();
     }
 
-    bool isAncestor(class__class base, class__class x) {
-      if (x.name->get_string() == "Object") {
+    bool isAncestor(std::string base, std::string x, std::unordered_map<std::string, std::string> hierarchy) {
+      if (x == "Object") {
         return false;
       }
-
-      if (x.name->get_string() == base.name->get_string()) {
+      if (x == base) {
         return true;
       }
-
-      return isAncestor(base, x.parent);
+      return isAncestor(base, hierarchy.at(x), hierarchy);
     }
 };
 
