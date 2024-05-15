@@ -21,3 +21,5 @@ class E {
 class F inherits E {
 
 };
+
+-- no Main class
