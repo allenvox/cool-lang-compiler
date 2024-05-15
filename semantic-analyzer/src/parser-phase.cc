@@ -206,10 +206,12 @@ int main(int argc, char **argv) {
       ),
       filename
     );*/
-    //semantic::dump_symtables(idtable, stringtable, inttable);
+    // semantic::dump_symtables(idtable, stringtable, inttable);
 
-    std::unordered_set<std::string> non_inherited{"Bool", "Int", "String", "SELF_TYPE"};
-    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"};
+    std::unordered_set<std::string> non_inherited{"Bool", "Int", "String",
+                                                  "SELF_TYPE"};
+    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int",
+                                                  "String", "SELF_TYPE"};
     std::unordered_map<std::string, std::string> classes_hierarchy;
     GetName name_visitor;
 
@@ -432,7 +434,8 @@ int main(int argc, char **argv) {
       }
 
       // Dump all features
-      // semantic::sequence_out("Features (methods + attributes) of '" + class_name + '\'', features_names);
+      // semantic::sequence_out("Features (methods + attributes) of '" +
+      // class_name + '\'', features_names);
     }
 
     // Check existence of class Main
@@ -441,12 +444,12 @@ int main(int argc, char **argv) {
     }
 
     // Dump all classes
-    //semantic::sequence_out("Classes (types)", classes_names);
+    // semantic::sequence_out("Classes (types)", classes_names);
 
     // Inheritance hierarchy loop check
     if (semantic::detect_cycle(classes_hierarchy)) {
       semantic::error("loop detected in classes inheritance hierarchy");
-      std::cerr << "# Your program classes' hierarchy (child : parent)\n";
+      std::cerr << "\\ program classes' hierarchy (child : parent)\n";
       for (auto p : classes_hierarchy) {
         std::cerr << '\t' << p.first << " : " << p.second << "\n";
       }
