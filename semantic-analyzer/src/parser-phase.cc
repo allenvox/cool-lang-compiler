@@ -194,8 +194,7 @@ int main(int argc, char **argv) {
     Symbol Int = idtable.add_string("Int");
     Symbol String = idtable.add_string("String");
     Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
-    /* ???
-      Class_ Object_class = class_(
+    /*Class_ Object_class = class_(
       Object,
       nil_Classes(),
       append_Features(
@@ -206,14 +205,11 @@ int main(int argc, char **argv) {
         single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))
       ),
       filename
-    );
-    */
+    );*/
     //semantic::dump_symtables(idtable, stringtable, inttable);
 
-    std::unordered_set<std::string> std_classes{"Object", "Bool", "Int",
-                                                "String", "SELF_TYPE"};
-    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int",
-                                                  "String", "SELF_TYPE"};
+    std::unordered_set<std::string> non_inherited{"Bool", "Int", "String", "SELF_TYPE"};
+    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int", "String", "SELF_TYPE"};
     std::unordered_map<std::string, std::string> classes_hierarchy;
     GetName name_visitor;
 
@@ -224,11 +220,6 @@ int main(int argc, char **argv) {
       // Get current class name
       parse_results->nth(i)->accept(name_visitor);
       std::string class_name = name_visitor.name;
-
-      // Check non-std class name
-      if (std_classes.find(class_name) != std_classes.end()) {
-        semantic::error("standard type " + class_name + " redeclared!");
-      }
 
       // Check unique class name
       auto result = classes_names.insert(class_name);
@@ -244,8 +235,7 @@ int main(int argc, char **argv) {
       classes_hierarchy[class_name] = parent_name;
 
       // Check that parent class isn't builtin (except 'Object')
-      if (std_classes.find(parent_name) != std_classes.end() &&
-          parent_name != "Object") {
+      if (non_inherited.find(parent_name) != non_inherited.end()) {
         semantic::error("class '" + class_name + "': can't use parent class '" +
                         parent_name + "' (builtin)");
       }
@@ -435,7 +425,6 @@ int main(int argc, char **argv) {
           }
         }
       }
-
       // Check existence of method main in class Main
       if (class_name == "Main" &&
           features_names.find("main") == features_names.end()) {
@@ -443,9 +432,7 @@ int main(int argc, char **argv) {
       }
 
       // Dump all features
-      semantic::sequence_out("Features (methods + attributes) of '" +
-                                 class_name + '\'',
-                             features_names);
+      // semantic::sequence_out("Features (methods + attributes) of '" + class_name + '\'', features_names);
     }
 
     // Check existence of class Main
@@ -454,16 +441,18 @@ int main(int argc, char **argv) {
     }
 
     // Dump all classes
-    semantic::sequence_out("Classes (types)", classes_names);
+    //semantic::sequence_out("Classes (types)", classes_names);
 
     // Inheritance hierarchy loop check
     if (semantic::detect_cycle(classes_hierarchy)) {
       semantic::error("loop detected in classes inheritance hierarchy");
+      std::cerr << "# Your program classes' hierarchy (child : parent)\n";
+      for (auto p : classes_hierarchy) {
+        std::cerr << '\t' << p.first << " : " << p.second << "\n";
+      }
     }
-
     std::fclose(token_file);
   }
-
   std::cerr << "# Detected " << semantic::err_count << " semantic errors\n";
   return semantic::err_count;
 }
