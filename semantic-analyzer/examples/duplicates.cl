@@ -1,6 +1,6 @@
 class Main {
     a : Int;
-    a : Int;
+    a : Int; -- class field duplicate
 
     main(b : Int): Int {
         {
@@ -9,12 +9,12 @@ class Main {
         }
     };
 
-    main(): Int {
+    main(): Int { -- method duplicate
         10
     };
 };
 
-class Main {
+class Main { -- Main class duplicate
     main(): Int {
         10
     };
