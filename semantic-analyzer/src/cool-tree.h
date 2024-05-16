@@ -217,6 +217,7 @@ public:
   friend class GetName;
   friend class GetType;
   friend class GetFormals;
+  friend class GetExpression;
   void accept(Visitor &v) override { v.visit(*this); }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -484,6 +485,7 @@ public:
 
   friend class GetName;
   friend class GetType;
+  friend class GetExpression;
   void accept(Visitor &v) override { v.visit(*this); }
 
   std::string get_expr_type() override { return "let_class"; }
@@ -908,6 +910,8 @@ class GetExpression : public Visitor {
 public:
   Expression expr = nullptr;
   void visit(method_class &ref) override { expr = ref.expr; }
+  void visit(attr_class &ref) override { expr = ref.init; }
+  void visit(let_class &ref) override { expr = ref.init; }
 };
 
 class GetExpressions : public Visitor {
