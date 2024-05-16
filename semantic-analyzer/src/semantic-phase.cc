@@ -1,6 +1,3 @@
-// TODO
-// check initializers (e.g. a: Int <- "wow" -- INCORRECT)
-
 #include "cool-parse.h"
 #include "cool-tree.h"
 #include "utilities.h"
@@ -14,16 +11,13 @@
 std::FILE *token_file = stdin;
 extern Classes parse_results;
 extern Program ast_root;
-
 extern int curr_lineno;
 const char *curr_filename = "<stdin>";
 extern int parse_errors;
-
 // Debug flags
 extern int yy_flex_debug;
 extern int cool_yydebug;
 int lex_verbose = 0;
-
 extern int cool_yyparse();
 
 namespace semantic {
@@ -45,7 +39,6 @@ void sequence_out(std::string title, std::unordered_set<std::string> set) {
 bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
   std::unordered_set<std::string> visited;
   std::unordered_set<std::string> currentlyVisiting;
-
   std::function<bool(const std::string &)> dfs =
       [&](const std::string &className) {
         // If already visited, no need to visit again
@@ -141,7 +134,6 @@ bool CheckSignatures(method_class *m1, method_class *m2) {
       return false;
     }
   }
-
   // All good - signatures are the same
   return true;
 }
@@ -260,7 +252,6 @@ int main(int argc, char **argv) {
       GetFeatures features_visitor;
       parse_results->nth(i)->accept(features_visitor);
       Features features = features_visitor.features;
-
       std::unordered_set<std::string> features_names;
 
       // Loop through features
@@ -455,8 +446,7 @@ int main(int argc, char **argv) {
       }
 
       // Dump all features
-      // semantic::sequence_out("Features (methods + attributes) of '" +
-      // class_name + '\'', features_names);
+      // semantic::sequence_out("Features (methods + attributes) of '" + class_name + '\'', features_names);
     }
 
     // Check existence of class Main
