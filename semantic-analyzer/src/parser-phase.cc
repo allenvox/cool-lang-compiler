@@ -168,6 +168,20 @@ void dump_symtables(IdTable idtable, StrTable strtable, IntTable inttable) {
   inttable.print();
 }
 
+void check_builtin_types_init(std::string type, Expression expr) {
+  std::string expr_type = expr->get_expr_type();
+  if (expr_type == "no_expr_class") {
+    return;
+  }
+  if (type == "Int" && expr_type != "int_const_class") {
+    error("initialization of Int with non-integer value");
+  } else if (type == "Bool" && expr_type != "bool_const_class") {
+    error("initialization of Bool with non-boolean value");
+  } else if (type == "String" && expr_type != "string_const_class") {
+    error("initialization of String with non-string value");
+  }
+}
+
 }; // namespace semantic
 
 int main(int argc, char **argv) {
@@ -393,7 +407,7 @@ int main(int argc, char **argv) {
               for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
                 Expression current = exprs->nth(l);
 
-                // Let_class
+                // let
                 if (current->get_expr_type() == "let_class") {
 
                   // Get let-expr variable name
@@ -425,6 +439,13 @@ int main(int argc, char **argv) {
               }
             }
           }
+        } else { // attr_class
+          // Check init expression
+          attr_class* attr = dynamic_cast<attr_class*>(feature);
+          attr->accept(type_visitor);
+          GetExpression getExpr;
+          attr->accept(getExpr);
+          semantic::check_builtin_types_init(type_visitor.type, getExpr.expr);
         }
       }
       // Check existence of method main in class Main
