@@ -6,6 +6,9 @@ class Main {
 
 class B inherits A {
   a : Heap;
+  c : Int <- "wow";
+  d : String <- 1;
+  e : Bool <- 2;
 
   some_method(b : Hashtab): Int {
     {
