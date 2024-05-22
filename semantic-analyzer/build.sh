@@ -2,6 +2,8 @@
 
 CXXFLAGS="-Wall -Isrc/ -Iobj/ -Wno-unused -Wno-deprecated -Wno-write-strings -Wno-free-nonheap-object"
 
+mkdir bin &> /dev/null
+mkdir obj &> /dev/null
 bison -d -v -y -b cool --debug -p cool_yy -o obj/cool-bison-parser.cc src/cool.bison
-flex -d -o obj/cool-flex-lexer.cc src/cool.flex
+flex -d -o obj/cool-flex-lexer.cc src/cool.flex &> /dev/null
 g++ -g $LDFLAGS $CXXFLAGS src/semantic-phase.cc src/utilities.cc src/stringtab.cc src/cool-tree.cc obj/cool-flex-lexer.cc obj/cool-bison-parser.cc -o bin/analyzer
