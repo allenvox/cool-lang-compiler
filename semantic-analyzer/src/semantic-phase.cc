@@ -24,7 +24,7 @@ namespace semantic {
 
 int err_count = 0;
 void error(std::string error_msg) {
-  std::cerr << "# semantic error: " << error_msg << '\n';
+  std::cerr << "semantic error: " << error_msg << '\n';
   err_count++;
 }
 
@@ -174,6 +174,48 @@ void check_builtin_types_init(std::string type, Expression expr) {
   }
 }
 
+Features getFeatures(tree_node *node) {
+  GetFeatures visitor;
+  node->accept(visitor);
+  return visitor.features;
+}
+
+std::string getName(tree_node *node) {
+  GetName visitor;
+  node->accept(visitor);
+  return std::string(visitor.name);
+}
+
+std::string getParentName(tree_node *node) {
+  GetParent visitor;
+  node->accept(visitor);
+  return std::string(visitor.name);
+}
+
+std::string getType(tree_node *node) {
+  GetType visitor;
+  node->accept(visitor);
+  return std::string(visitor.type);
+}
+
+Formals getFormals(tree_node *node) {
+  GetFormals visitor;
+  node->accept(visitor);
+  return visitor.formals;
+}
+
+Expression getExpression(tree_node *node) {
+  GetExpression visitor;
+  node->accept(visitor);
+  return visitor.expr;
+}
+
+Expressions getExpressions(tree_node *node) {
+  GetExpressions visitor;
+  node->accept(visitor);
+  return visitor.exprs;
+}
+
 }; // namespace semantic
 
 int main(int argc, char **argv) {
@@ -192,42 +234,21 @@ int main(int argc, char **argv) {
       std::cerr << "Error: parse errors\n";
       std::exit(1);
     }
-
-    // Добавление в AST класса (узла) для встроенных типов
-    Symbol filename = stringtable.add_string("<builtin-classes>");
-    Symbol Object = idtable.add_string("Object");
-    Symbol Bool = idtable.add_string("Bool");
-    Symbol Int = idtable.add_string("Int");
-    Symbol String = idtable.add_string("String");
-    Symbol SELF_TYPE = idtable.add_string("SELF_TYPE");
-    /*Class_ Object_class = class_(
-      Object,
-      nil_Classes(),
-      append_Features(
-        append_Features(
-          single_Features(method(cool_abort, nil_Formals(), Object, no_expr())),
-          single_Features(method(type_name, nil_Formals(), Str, no_expr()))
-        ),
-        single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))
-      ),
-      filename
-    );*/
     // semantic::dump_symtables(idtable, stringtable, inttable);
 
+    std::unordered_map<std::string, std::string> classes_hierarchy;
+    std::unordered_map<std::string, std::string> var_to_type;
     std::unordered_set<std::string> non_inherited{"Bool", "Int", "String",
                                                   "SELF_TYPE"};
-    std::unordered_set<std::string> classes_names{"Object", "Bool", "Int",
-                                                  "String", "SELF_TYPE"};
-    std::unordered_map<std::string, std::string> classes_hierarchy;
-    GetName name_visitor;
+    std::unordered_set<std::string> classes_names(non_inherited);
+    classes_names.insert("Object");
 
     // Loop through classes
     for (int i = parse_results->first(); parse_results->more(i);
          i = parse_results->next(i)) {
 
-      // Get current class name
-      parse_results->nth(i)->accept(name_visitor);
-      std::string class_name = name_visitor.name;
+      class__class *current_class = dynamic_cast<class__class *>(parse_results->nth(i));
+      std::string class_name = semantic::getName(current_class);
 
       // Check unique class name
       auto result = classes_names.insert(class_name);
@@ -237,9 +258,7 @@ int main(int argc, char **argv) {
       }
 
       // Add class to inheritance hierarchy
-      GetParent parent_visitor;
-      parse_results->nth(i)->accept(parent_visitor);
-      std::string parent_name = parent_visitor.name;
+      std::string parent_name = semantic::getParentName(current_class);
       classes_hierarchy[class_name] = parent_name;
 
       // Check that parent class isn't builtin (except 'Object')
@@ -248,22 +267,15 @@ int main(int argc, char **argv) {
                         parent_name + "' (builtin)");
       }
 
-      // Get class features
-      GetFeatures features_visitor;
-      parse_results->nth(i)->accept(features_visitor);
-      Features features = features_visitor.features;
+      Features features = semantic::getFeatures(current_class);
       std::unordered_set<std::string> features_names;
 
       // Loop through features
       for (int j = features->first(); features->more(j);
            j = features->next(j)) {
 
-        // Current feature
-        Feature feature = features->nth(j);
-
-        // Get feature name
-        feature->accept(name_visitor);
-        std::string feature_name = name_visitor.name;
+        Feature current_feature = features->nth(j);
+        std::string feature_name = semantic::getName(current_feature);
 
         // 'self' name check
         if (feature_name == "self") {
@@ -278,51 +290,41 @@ int main(int argc, char **argv) {
         }
 
         // Get feature type: methods - return_type, attrs - type_decl
-        GetType type_visitor;
-        feature->accept(type_visitor);
+        std::string feature_type = semantic::getType(current_feature);
 
         // Type existence check
-        std::string type = type_visitor.type;
-        if (classes_names.find(type) == classes_names.end()) {
-          semantic::error("unknown type '" + type + "' in " + feature_name);
+        if (classes_names.find(feature_type) == classes_names.end()) {
+          semantic::error("unknown type '" + feature_type + "' in " + feature_name);
         }
 
         // SELF_TYPE check
-        if (type == "SELF_TYPE") {
+        if (feature_type == "SELF_TYPE") {
           semantic::error("can't use SELF_TYPE as a type inside class");
         }
 
-        if (feature->get_feature_type() == "method_class") {
-          // Methods formals
-          GetFormals formals_visitor;
-          feature->accept(formals_visitor);
-          Formals formals = formals_visitor.formals;
+        if (current_feature->get_feature_type() == "method_class") {
+          Formals formals = semantic::getFormals(current_feature);
 
           // Check method overrides - must have same signature
           if (std::string(parent_name) != "Object") {
-            // Get parent class features
-            GetFeatures parent_features_visitor;
             class__class *parent =
                 semantic::FindClass(parent_name, parse_results);
+
             if (parent) {
-              parent->accept(parent_features_visitor);
-              Features parent_features = parent_features_visitor.features;
+              Features parent_features = semantic::getFeatures(parent);
 
               // Loop through parent features
               for (int a = parent_features->first(); parent_features->more(a);
                    a = parent_features->next(a)) {
                 Feature parent_feature = parent_features->nth(a);
-
-                // Get feature name
-                parent_feature->accept(name_visitor);
-                std::string parent_feature_name = name_visitor.name;
+                std::string parent_feature_name = semantic::getName(parent_feature);
 
                 // If there is parent feature with same name
                 if (parent_feature_name == feature_name) {
 
                   // Check if feature is same type
                   if (parent_feature->get_feature_type() !=
-                      feature->get_feature_type()) {
+                      current_feature->get_feature_type()) {
                     semantic::error("wrong override of feature '" +
                                     feature_name + "' from class '" +
                                     parent_name + "' in class '" + class_name +
@@ -331,7 +333,7 @@ int main(int argc, char **argv) {
 
                   // Check method signatures
                   method_class *cur_method =
-                      dynamic_cast<method_class *>(feature);
+                      dynamic_cast<method_class *>(current_feature);
                   method_class *parent_method =
                       dynamic_cast<method_class *>(parent_feature);
                   if (!semantic::CheckSignatures(cur_method, parent_method)) {
@@ -343,8 +345,8 @@ int main(int argc, char **argv) {
                   }
                 }
               }
-            } else {
-              semantic::error("parent class '" + std::string(parent_name) +
+            } else { // If parent doesn't exist
+              semantic::error("parent class '" + parent_name +
                               "' of class '" + class_name + "' doesn't exist");
             }
           }
@@ -355,10 +357,8 @@ int main(int argc, char **argv) {
           // Loop through formals
           for (int k = formals->first(); formals->more(k);
                k = formals->next(k)) {
-
-            // Get formal name
-            formals->nth(k)->accept(name_visitor);
-            std::string formal_name = name_visitor.name;
+            Formal_class *current_formal = dynamic_cast<formal_class *>(formals->nth(k));
+            std::string formal_name = semantic::getName(current_formal);
 
             // 'self' name check
             if (formal_name == "self") {
@@ -372,38 +372,27 @@ int main(int argc, char **argv) {
                               feature_name + "' already exists!");
             }
 
-            // Get formal type
-            formals->nth(k)->accept(type_visitor);
-            type = type_visitor.type;
-
+            std::string formal_type = semantic::getType(current_formal);
             // Check formal type
-            if (classes_names.find(type) == classes_names.end()) {
-              semantic::error("unknown type '" + type + "' in " + formal_name);
+            if (classes_names.find(formal_type) == classes_names.end()) {
+              semantic::error("unknown type '" + formal_type + "' in " + formal_name);
             }
 
             // Get method expression
-            GetExpression expr_visitor;
-            features->nth(j)->accept(expr_visitor);
-            Expression expr = expr_visitor.expr;
+            Expression expr = semantic::getExpression(current_feature);
 
             // block_class check
             if (expr->get_expr_type() == "block_class") {
-
               // Get expressions from block
-              GetExpressions exprs_visitor;
-              expr->accept(exprs_visitor);
-              Expressions exprs = exprs_visitor.exprs;
+              Expressions exprs = semantic::getExpressions(expr);
 
               // Block expressions check
               for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
-                Expression current = exprs->nth(l);
+                Expression current_expr = exprs->nth(l);
 
                 // let
-                if (current->get_expr_type() == "let_class") {
-
-                  // Get let-expr variable name
-                  current->accept(name_visitor);
-                  formal_name = name_visitor.name;
+                if (current_expr->get_expr_type() == "let_class") {
+                  formal_name = semantic::getName(current_expr);
 
                   // 'self' name check
                   if (formal_name == "self") {
@@ -420,10 +409,9 @@ int main(int argc, char **argv) {
                   }
 
                   // Let-expr formal type check
-                  current->accept(type_visitor);
-                  type = type_visitor.type;
-                  if (classes_names.find(type) == classes_names.end()) {
-                    semantic::error("unknown type '" + type + "' in " +
+                  std::string expr_type = semantic::getType(current_expr);
+                  if (classes_names.find(expr_type) == classes_names.end()) {
+                    semantic::error("unknown type '" + expr_type + "' in " +
                                     formal_name);
                   }
                 }
@@ -432,11 +420,8 @@ int main(int argc, char **argv) {
           }
         } else { // attr_class
           // Check init expression
-          attr_class* attr = dynamic_cast<attr_class*>(feature);
-          attr->accept(type_visitor);
-          GetExpression getExpr;
-          attr->accept(getExpr);
-          semantic::check_builtin_types_init(type_visitor.type, getExpr.expr);
+          attr_class* attr = dynamic_cast<attr_class*>(current_feature);
+          semantic::check_builtin_types_init(semantic::getType(attr), semantic::getExpression(attr));
         }
       }
       // Check existence of method main in class Main
