@@ -327,6 +327,7 @@ public:
   void dump(std::ostream &stream, int n);
 
   friend class GetName;
+  friend class GetType;
   void accept(Visitor &v) override { v.visit(*this); }
 
   std::string get_expr_type() override { return "static_dispatch_class"; }
@@ -512,6 +513,9 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
+  friend class GetExpressions;
+  void accept(Visitor &v) override { v.visit(*this); }
+
   std::string get_expr_type() override { return "plus_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -535,6 +539,9 @@ public:
   }
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
+
+  friend class GetExpressions;
+  void accept(Visitor &v) override { v.visit(*this); }
 
   std::string get_expr_type() override { return "sub_class"; }
 
@@ -560,6 +567,9 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
+  friend class GetExpressions;
+  void accept(Visitor &v) override { v.visit(*this); }
+
   std::string get_expr_type() override { return "mul_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -583,6 +593,9 @@ public:
   }
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
+
+  friend class GetExpressions;
+  void accept(Visitor &v) override { v.visit(*this); }
 
   std::string get_expr_type() override { return "divide_class"; }
 
@@ -736,6 +749,9 @@ public:
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
 
+  friend class GetName;
+  void accept(Visitor &v) override { v.visit(*this); }
+
   std::string get_expr_type() override { return "bool_const_class"; }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -755,6 +771,9 @@ public:
   string_const_class(Symbol a1) { token = a1; }
   Expression copy_Expression();
   void dump(std::ostream &stream, int n);
+
+  friend class GetName;
+  void accept(Visitor &v) override { v.visit(*this); }
 
   std::string get_expr_type() override { return "string_const_class"; }
 
@@ -852,12 +871,16 @@ public:
 
 class GetName : public Visitor {
 public:
-  char *name;
-  void visit(class__class &ref) override { name = ref.name->get_string(); }
-  void visit(method_class &ref) override { name = ref.name->get_string(); }
-  void visit(attr_class &ref) override { name = ref.name->get_string(); }
-  void visit(formal_class &ref) override { name = ref.name->get_string(); }
-  void visit(let_class &ref) override { name = ref.identifier->get_string(); }
+  std::string name = "";
+  void visit(class__class &ref) override { name = std::string(ref.name->get_string()); }
+  void visit(method_class &ref) override { name = std::string(ref.name->get_string()); }
+  void visit(attr_class &ref) override { name = std::string(ref.name->get_string()); }
+  void visit(formal_class &ref) override { name = std::string(ref.name->get_string()); }
+  void visit(let_class &ref) override { name = std::string(ref.identifier->get_string()); }
+  void visit(dispatch_class &ref) override { name = std::string(ref.name->get_string()); }
+  void visit(object_class &ref) override { name = std::string(ref.name->get_string()); }
+  void visit(bool_const_class &ref) override { name = std::to_string(ref.val); }
+  void visit(string_const_class &ref) override { name = std::string(ref.token->get_string()); }
 };
 
 class GetFeatures : public Visitor {
@@ -875,6 +898,9 @@ public:
   void visit(attr_class &ref) override { type = ref.type_decl->get_string(); }
   void visit(formal_class &ref) override { type = ref.type_decl->get_string(); }
   void visit(let_class &ref) override { type = ref.type_decl->get_string(); }
+  void visit(static_dispatch_class &ref) override {
+    type = ref.type_name->get_string();
+  }
 };
 
 class GetParent : public Visitor {
@@ -918,6 +944,30 @@ class GetExpressions : public Visitor {
 public:
   Expressions exprs = nullptr;
   void visit(block_class &ref) override { exprs = ref.body; }
+
+  void visit(plus_class &ref) override {
+    Expressions e1 = new single_list_node<Expression>(ref.e1);
+    Expressions e2 = new single_list_node<Expression>(ref.e2);
+    exprs = new append_node<Expression>(e1, e2);
+  }
+
+  void visit(sub_class &ref) override {
+    Expressions e1 = new single_list_node<Expression>(ref.e1);
+    Expressions e2 = new single_list_node<Expression>(ref.e2);
+    exprs = new append_node<Expression>(e1, e2);
+  }
+
+  void visit(mul_class &ref) override {
+    Expressions e1 = new single_list_node<Expression>(ref.e1);
+    Expressions e2 = new single_list_node<Expression>(ref.e2);
+    exprs = new append_node<Expression>(e1, e2);
+  }
+
+  void visit(divide_class &ref) override {
+    Expressions e1 = new single_list_node<Expression>(ref.e1);
+    Expressions e2 = new single_list_node<Expression>(ref.e2);
+    exprs = new append_node<Expression>(e1, e2);
+  }
 };
 
 // define the prototypes of the interface

@@ -23,6 +23,12 @@ class let_class;
 class new__class;
 class object_class;
 class block_class;
+class plus_class;
+class sub_class;
+class mul_class;
+class divide_class;
+class string_const_class;
+class bool_const_class;
 
 class Visitor {
 public:
@@ -38,6 +44,12 @@ public:
   virtual void visit(new__class &ref) {}
   virtual void visit(object_class &ref) {}
   virtual void visit(block_class &ref) {}
+  virtual void visit(plus_class &ref) {}
+  virtual void visit(sub_class &ref) {}
+  virtual void visit(mul_class &ref) {}
+  virtual void visit(divide_class &ref) {}
+  virtual void visit(string_const_class &ref) {}
+  virtual void visit(bool_const_class &ref) {}
   virtual ~Visitor() = default;
 };
 
