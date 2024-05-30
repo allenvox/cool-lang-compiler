@@ -20,6 +20,9 @@ extern int cool_yydebug;
 int lex_verbose = 0;
 extern int cool_yyparse();
 
+using STable = std::unordered_map<std::string, std::string>;
+using SSet = std::unordered_set<std::string>;
+
 namespace semantic {
 
 int err_count = 0;
@@ -28,7 +31,7 @@ void error(std::string error_msg) {
   err_count++;
 }
 
-void sequence_out(std::string title, std::unordered_set<std::string> set) {
+void sequence_out(std::string title, SSet set) {
   std::cerr << title << ": ";
   for (auto s : set) {
     std::cerr << s << ' ';
@@ -36,9 +39,9 @@ void sequence_out(std::string title, std::unordered_set<std::string> set) {
   std::cerr << '\n';
 }
 
-bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
-  std::unordered_set<std::string> visited;
-  std::unordered_set<std::string> currentlyVisiting;
+bool detect_cycle(STable hierarchy) {
+  SSet visited;
+  SSet currentlyVisiting;
   std::function<bool(const std::string &)> dfs =
       [&](const std::string &className) {
         // If already visited, no need to visit again
@@ -78,100 +81,6 @@ bool detect_cycle(std::unordered_map<std::string, std::string> hierarchy) {
     }
   }
   return false; // No loop detected
-}
-
-bool CheckSignatures(method_class *m1, method_class *m2) {
-  // Get return types
-  GetType m1_type_visitor;
-  GetType m2_type_visitor;
-  m1->accept(m1_type_visitor);
-  m2->accept(m2_type_visitor);
-  // Check methods return types
-  if (m1_type_visitor.type != m2_type_visitor.type) {
-    return false;
-  }
-
-  // Get formals
-  GetFormals m1_formals_visitor;
-  GetFormals m2_formals_visitor;
-  m1->accept(m1_formals_visitor);
-  m2->accept(m2_formals_visitor);
-  Formals m1_formals = m1_formals_visitor.formals;
-  Formals m2_formals = m2_formals_visitor.formals;
-
-  // Check formals count
-  if (m1_formals->len() != m2_formals->len()) {
-    return false;
-  }
-
-  // Loop through formals
-  for (int i = m1_formals->first(); m1_formals->more(i);
-       i = m1_formals->next(i)) {
-    formal_class *m1_formal = dynamic_cast<formal_class *>(m1_formals->nth(i));
-    formal_class *m2_formal = dynamic_cast<formal_class *>(m2_formals->nth(i));
-
-    // Get formal names
-    GetName m1_formal_name_visitor;
-    GetName m2_formal_name_visitor;
-    m1_formal->accept(m1_formal_name_visitor);
-    m2_formal->accept(m2_formal_name_visitor);
-    std::string name1 = m1_formal_name_visitor.name;
-    std::string name2 = m2_formal_name_visitor.name;
-    // Check formal names
-    if (name1 != name2) {
-      return false;
-    }
-
-    // Get formal types
-    GetType m1_formal_type_visitor;
-    GetType m2_formal_type_visitor;
-    m1_formal->accept(m1_formal_type_visitor);
-    m2_formal->accept(m2_formal_type_visitor);
-    std::string type1 = m1_formal_type_visitor.type;
-    std::string type2 = m2_formal_type_visitor.type;
-    // Check formal types
-    if (type1 != type2) {
-      return false;
-    }
-  }
-  // All good - signatures are the same
-  return true;
-}
-
-class__class *FindClass(std::string name, Classes classes) {
-  for (int i = classes->first(); classes->more(i); i = classes->next(i)) {
-    GetName name_visitor;
-    class__class *cur_class = dynamic_cast<class__class *>(classes->nth(i));
-    cur_class->accept(name_visitor);
-    if (name == name_visitor.name) {
-      return cur_class;
-    }
-  }
-  return nullptr;
-}
-
-void dump_symtables(IdTable idtable, StrTable strtable, IntTable inttable) {
-  ast_root->dump_with_types(std::cerr, 0);
-  std::cerr << "# Identifiers:\n";
-  idtable.print();
-  std::cerr << "# Strings:\n";
-  stringtable.print();
-  std::cerr << "# Integers:\n";
-  inttable.print();
-}
-
-void check_builtin_types_init(std::string type, Expression expr) {
-  std::string expr_type = expr->get_expr_type();
-  if (expr_type == "no_expr_class") {
-    return;
-  }
-  if (type == "Int" && expr_type != "int_const_class") {
-    error("initialization of Int with non-integer value");
-  } else if (type == "Bool" && expr_type != "bool_const_class") {
-    error("initialization of Bool with non-boolean value");
-  } else if (type == "String" && expr_type != "string_const_class") {
-    error("initialization of String with non-string value");
-  }
 }
 
 Features getFeatures(tree_node *node) {
@@ -216,6 +125,130 @@ Expressions getExpressions(tree_node *node) {
   return visitor.exprs;
 }
 
+bool CheckSignatures(method_class *m1, method_class *m2) {
+  // Check methods return types
+  if (getType(m1) != getType(m2)) {
+    return false;
+  }
+
+  // Get formals
+  Formals m1_formals = getFormals(m1);
+  Formals m2_formals = getFormals(m2);
+
+  // Check formals count
+  if (m1_formals->len() != m2_formals->len()) {
+    return false;
+  }
+
+  // Loop through formals
+  for (int i = m1_formals->first(); m1_formals->more(i);
+       i = m1_formals->next(i)) {
+    formal_class *m1_formal = dynamic_cast<formal_class *>(m1_formals->nth(i));
+    formal_class *m2_formal = dynamic_cast<formal_class *>(m2_formals->nth(i));
+
+    // Check formal names
+    if (getName(m1_formal) != getName(m2_formal)) {
+      return false;
+    }
+
+    // Check formal types
+    if (getType(m1_formal) != getType(m2_formal)) {
+      return false;
+    }
+  }
+  // All good - signatures are the same
+  return true;
+}
+
+class__class *FindClass(std::string name, Classes classes) {
+  for (int i = classes->first(); classes->more(i); i = classes->next(i)) {
+    class__class *cur_class = dynamic_cast<class__class *>(classes->nth(i));
+    if (name == getName(cur_class)) {
+      return cur_class;
+    }
+  }
+  return nullptr;
+}
+
+void dump_symtables(IdTable idtable, StrTable strtable, IntTable inttable) {
+  ast_root->dump_with_types(std::cerr, 0);
+  std::cerr << "# Identifiers:\n";
+  idtable.print();
+  std::cerr << "# Strings:\n";
+  stringtable.print();
+  std::cerr << "# Integers:\n";
+  inttable.print();
+}
+
+void check_builtin_types_init(std::string type, Expression expr) {
+  std::string expr_type = expr->get_expr_type();
+  if (expr_type == "no_expr_class") {
+    return;
+  }
+  if (type == "Int" && expr_type != "int_const_class") {
+    error("initialization of Int with non-integer value");
+  } else if (type == "Bool" && expr_type != "bool_const_class") {
+    error("initialization of Bool with non-boolean value");
+  } else if (type == "String" && expr_type != "string_const_class") {
+    error("initialization of String with non-string value");
+  }
+}
+
+void checkExpression(Expression expr, STable &attr_to_type,
+                     STable &formal_to_type, SSet &classes_names,
+                     SSet &formals_names) {
+  std::string expr_type = expr->get_expr_type();
+  if (expr_type == "block_class") {
+    // Get expressions from block
+    Expressions exprs = semantic::getExpressions(expr);
+    // Block expressions check
+    for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
+      checkExpression(exprs->nth(l), attr_to_type, formal_to_type,
+                      classes_names, formals_names);
+    }
+
+  } else if (expr_type == "let_class") {
+    std::string formal_name = semantic::getName(expr);
+
+    // 'self' name check
+    if (formal_name == "self") {
+      semantic::error("can't use 'self' as new local variable name");
+    }
+
+    // Check unique of nested formal
+    auto result = formals_names.insert(formal_name);
+    if (!result.second) {
+      semantic::error("formal '" + formal_name + "' already exists!");
+    }
+
+    // Let-expr formal type check
+    std::string expr_type = semantic::getType(expr);
+    if (classes_names.find(expr_type) == classes_names.end()) {
+      semantic::error("unknown type '" + expr_type + "' in " + formal_name);
+    }
+
+  } else if (expr_type == "plus_class" || expr_type == "sub_class" ||
+             expr_type == "mul_class" || expr_type == "divide_class") {
+    Expressions exprs = semantic::getExpressions(expr);
+    for (int i = exprs->first(); exprs->more(i); i = exprs->next(i)) {
+      Expression e = exprs->nth(i);
+      bool int_const_check = e->get_expr_type() == "int_const_class";
+      bool static_dispatch_check =
+          e->get_expr_type() == "static_dispatch_class" && getType(e) == "Int";
+      bool dispatch_check = e->get_expr_type() == "dispatch_class" &&
+                            (attr_to_type[getName(e)] == "Int" ||
+                             formal_to_type[getName(e)] == "Int");
+      bool object_check = e->get_expr_type() == "object_class" &&
+                          (attr_to_type[getName(e)] == "Int" ||
+                           formal_to_type[getName(e)] == "Int");
+      if (!int_const_check && !static_dispatch_check && !dispatch_check && !object_check) {
+        error("expression or variable in arithmetic operation is non-integer");
+        std::cerr << "\\ type = " << e->get_expr_type() << ", token = " << getName(e) << '\n';
+      }
+    }
+  }
+}
+
 }; // namespace semantic
 
 int main(int argc, char **argv) {
@@ -236,18 +269,16 @@ int main(int argc, char **argv) {
     }
     // semantic::dump_symtables(idtable, stringtable, inttable);
 
-    std::unordered_map<std::string, std::string> classes_hierarchy;
-    std::unordered_map<std::string, std::string> var_to_type;
-    std::unordered_set<std::string> non_inherited{"Bool", "Int", "String",
-                                                  "SELF_TYPE"};
-    std::unordered_set<std::string> classes_names(non_inherited);
+    STable classes_hierarchy;
+    SSet non_inherited{"Bool", "Int", "String", "SELF_TYPE"};
+    SSet classes_names(non_inherited);
     classes_names.insert("Object");
 
     // Loop through classes
     for (int i = parse_results->first(); parse_results->more(i);
          i = parse_results->next(i)) {
-
-      class__class *current_class = dynamic_cast<class__class *>(parse_results->nth(i));
+      class__class *current_class =
+          dynamic_cast<class__class *>(parse_results->nth(i));
       std::string class_name = semantic::getName(current_class);
 
       // Check unique class name
@@ -268,7 +299,8 @@ int main(int argc, char **argv) {
       }
 
       Features features = semantic::getFeatures(current_class);
-      std::unordered_set<std::string> features_names;
+      SSet features_names;
+      STable attr_to_type;
 
       // Loop through features
       for (int j = features->first(); features->more(j);
@@ -294,7 +326,8 @@ int main(int argc, char **argv) {
 
         // Type existence check
         if (classes_names.find(feature_type) == classes_names.end()) {
-          semantic::error("unknown type '" + feature_type + "' in " + feature_name);
+          semantic::error("unknown type '" + feature_type + "' in " +
+                          feature_name);
         }
 
         // SELF_TYPE check
@@ -317,7 +350,8 @@ int main(int argc, char **argv) {
               for (int a = parent_features->first(); parent_features->more(a);
                    a = parent_features->next(a)) {
                 Feature parent_feature = parent_features->nth(a);
-                std::string parent_feature_name = semantic::getName(parent_feature);
+                std::string parent_feature_name =
+                    semantic::getName(parent_feature);
 
                 // If there is parent feature with same name
                 if (parent_feature_name == feature_name) {
@@ -346,18 +380,19 @@ int main(int argc, char **argv) {
                 }
               }
             } else { // If parent doesn't exist
-              semantic::error("parent class '" + parent_name +
-                              "' of class '" + class_name + "' doesn't exist");
+              semantic::error("parent class '" + parent_name + "' of class '" +
+                              class_name + "' doesn't exist");
             }
           }
 
-          // Local formals names
-          std::unordered_set<std::string> formals_names;
+          STable formal_to_type;
+          SSet formals_names; // Method formals names
 
           // Loop through formals
           for (int k = formals->first(); formals->more(k);
                k = formals->next(k)) {
-            Formal_class *current_formal = dynamic_cast<formal_class *>(formals->nth(k));
+            Formal_class *current_formal =
+                dynamic_cast<formal_class *>(formals->nth(k));
             std::string formal_name = semantic::getName(current_formal);
 
             // 'self' name check
@@ -375,53 +410,26 @@ int main(int argc, char **argv) {
             std::string formal_type = semantic::getType(current_formal);
             // Check formal type
             if (classes_names.find(formal_type) == classes_names.end()) {
-              semantic::error("unknown type '" + formal_type + "' in " + formal_name);
+              semantic::error("unknown type '" + formal_type + "' in " +
+                              formal_name);
             }
 
-            // Get method expression
-            Expression expr = semantic::getExpression(current_feature);
-
-            // block_class check
-            if (expr->get_expr_type() == "block_class") {
-              // Get expressions from block
-              Expressions exprs = semantic::getExpressions(expr);
-
-              // Block expressions check
-              for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
-                Expression current_expr = exprs->nth(l);
-
-                // let
-                if (current_expr->get_expr_type() == "let_class") {
-                  formal_name = semantic::getName(current_expr);
-
-                  // 'self' name check
-                  if (formal_name == "self") {
-                    semantic::error(
-                        "can't use 'self' as new local variable name");
-                  }
-
-                  // Check unique of nested formal
-                  result = formals_names.insert(formal_name);
-                  if (!result.second) {
-                    semantic::error("formal '" + std::string(formal_name) +
-                                    "' in '" + feature_name + "' from '" +
-                                    class_name + "' already exists!");
-                  }
-
-                  // Let-expr formal type check
-                  std::string expr_type = semantic::getType(current_expr);
-                  if (classes_names.find(expr_type) == classes_names.end()) {
-                    semantic::error("unknown type '" + expr_type + "' in " +
-                                    formal_name);
-                  }
-                }
-              }
-            }
+            formal_to_type[formal_name] = formal_type;
           }
+
+          // Get method expression
+          Expression expr = semantic::getExpression(current_feature);
+          semantic::checkExpression(expr, attr_to_type, formal_to_type,
+                                    classes_names, formals_names);
+
         } else { // attr_class
           // Check init expression
-          attr_class* attr = dynamic_cast<attr_class*>(current_feature);
-          semantic::check_builtin_types_init(semantic::getType(attr), semantic::getExpression(attr));
+          attr_class *attr = dynamic_cast<attr_class *>(current_feature);
+          std::string attr_name = semantic::getName(attr);
+          std::string attr_type = semantic::getType(attr);
+          semantic::check_builtin_types_init(attr_type,
+                                             semantic::getExpression(attr));
+          attr_to_type[attr_name] = attr_type;
         }
       }
       // Check existence of method main in class Main
@@ -431,7 +439,8 @@ int main(int argc, char **argv) {
       }
 
       // Dump all features
-      // semantic::sequence_out("Features (methods + attributes) of '" + class_name + '\'', features_names);
+      // semantic::sequence_out("Features (methods + attributes) of '" +
+      // class_name + '\'', features_names);
     }
 
     // Check existence of class Main
