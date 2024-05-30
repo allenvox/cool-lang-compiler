@@ -22,6 +22,7 @@ extern int cool_yyparse();
 
 using STable = std::unordered_map<std::string, std::string>;
 using SSet = std::unordered_set<std::string>;
+using FeaturesTable = std::unordered_map<std::string, STable>;
 
 namespace semantic {
 
@@ -92,7 +93,7 @@ Features getFeatures(tree_node *node) {
 std::string getName(tree_node *node) {
   GetName visitor;
   node->accept(visitor);
-  return std::string(visitor.name);
+  return visitor.name;
 }
 
 std::string getParentName(tree_node *node) {
@@ -196,7 +197,7 @@ void check_builtin_types_init(std::string type, Expression expr) {
 
 void checkExpression(Expression expr, STable &attr_to_type,
                      STable &formal_to_type, SSet &classes_names,
-                     SSet &formals_names) {
+                     SSet &formals_names, FeaturesTable &classes_features) {
   std::string expr_type = expr->get_expr_type();
   if (expr_type == "block_class") {
     // Get expressions from block
@@ -204,7 +205,7 @@ void checkExpression(Expression expr, STable &attr_to_type,
     // Block expressions check
     for (int l = exprs->first(); exprs->more(l); l = exprs->next(l)) {
       checkExpression(exprs->nth(l), attr_to_type, formal_to_type,
-                      classes_names, formals_names);
+                      classes_names, formals_names, classes_features);
     }
 
   } else if (expr_type == "let_class") {
@@ -227,25 +228,99 @@ void checkExpression(Expression expr, STable &attr_to_type,
       semantic::error("unknown type '" + expr_type + "' in " + formal_name);
     }
 
+    // Check initialization of local variable
+    check_builtin_types_init(expr_type, getExpression(expr));
+
   } else if (expr_type == "plus_class" || expr_type == "sub_class" ||
              expr_type == "mul_class" || expr_type == "divide_class") {
     Expressions exprs = semantic::getExpressions(expr);
     for (int i = exprs->first(); exprs->more(i); i = exprs->next(i)) {
       Expression e = exprs->nth(i);
-      bool int_const_check = e->get_expr_type() == "int_const_class";
+      bool int_const_check = e->get_expr_type() == "int_const_class" || e->get_expr_type() == "plus_class" || e->get_expr_type() == "sub_class" || e->get_expr_type() == "mul_class" || e->get_expr_type() == "divide_class";
       bool static_dispatch_check =
           e->get_expr_type() == "static_dispatch_class" && getType(e) == "Int";
-      bool dispatch_check = e->get_expr_type() == "dispatch_class" &&
-                            (attr_to_type[getName(e)] == "Int" ||
-                             formal_to_type[getName(e)] == "Int");
+
+      bool dispatch_check = e->get_expr_type() == "dispatch_class";
+      for (auto &[_, map] : classes_features) {
+        if (map[getName(e)] == "Int") {
+          dispatch_check &= true;
+        }
+      }
+
       bool object_check = e->get_expr_type() == "object_class" &&
                           (attr_to_type[getName(e)] == "Int" ||
                            formal_to_type[getName(e)] == "Int");
       if (!int_const_check && !static_dispatch_check && !dispatch_check && !object_check) {
-        error("expression or variable in arithmetic operation is non-integer");
-        std::cerr << "\\ type = " << e->get_expr_type() << ", token = " << getName(e) << '\n';
+        error("non-integer " + e->get_expr_type() + " in arithmetic operation");
       }
     }
+
+  } else if (expr_type == "neg_class") {
+    Expression e = getExpression(expr);
+    bool bool_const_check = e->get_expr_type() == "bool_const_class" || e->get_expr_type() == "lt_class" || e->get_expr_type() == "eq_class" || e->get_expr_type() == "leq_class";
+    bool static_dispatch_check =
+            e->get_expr_type() == "static_dispatch_class" && getType(e) == "Bool";
+
+    bool dispatch_check = e->get_expr_type() == "dispatch_class";
+    for (auto &[_, map] : classes_features) {
+      if (map[getName(e)] == "Bool") {
+        dispatch_check &= true;
+      }
+    }
+
+    bool object_check = e->get_expr_type() == "object_class" &&
+                        (attr_to_type[getName(e)] == "Bool" ||
+                         formal_to_type[getName(e)] == "Bool");
+    if (!bool_const_check && !static_dispatch_check && !dispatch_check && !object_check) {
+      error("non-boolean " + e->get_expr_type() + " in negative (~) operation");
+    }
+
+  } else if (expr_type == "lt_class" || expr_type == "leq_class") {
+    Expressions exprs = semantic::getExpressions(expr);
+    for (int i = exprs->first(); exprs->more(i); i = exprs->next(i)) {
+      Expression e = exprs->nth(i);
+      bool int_const_check = e->get_expr_type() == "int_const_class";
+      bool static_dispatch_check =
+              e->get_expr_type() == "static_dispatch_class" && getType(e) == "Int";
+
+      bool dispatch_check = e->get_expr_type() == "dispatch_class";
+      for (auto &[_, map] : classes_features) {
+        if (map[getName(e)] == "Int") {
+          dispatch_check &= true;
+        }
+      }
+
+      bool object_check = e->get_expr_type() == "object_class" &&
+                          (attr_to_type[getName(e)] == "Int" ||
+                           formal_to_type[getName(e)] == "Int");
+      if (!int_const_check && !static_dispatch_check && !dispatch_check && !object_check) {
+        error("non-integer " + e->get_expr_type() + " in less-based compare operation");
+      }
+    }
+
+  } else if (expr_type == "eq_class") {
+    Expressions exprs = semantic::getExpressions(expr);
+    for (int i = exprs->first(); exprs->more(i); i = exprs->next(i)) {
+      Expression e = exprs->nth(i);
+      bool const_check = e->get_expr_type() == "int_const_class" || e->get_expr_type() == "bool_const_class" || e->get_expr_type() == "lt_class" || e->get_expr_type() == "eq_class" || e->get_expr_type() == "leq_class" || e->get_expr_type() == "plus_class" || e->get_expr_type() == "sub_class" || e->get_expr_type() == "mul_class" || e->get_expr_type() == "divide_class";
+      bool static_dispatch_check =
+              e->get_expr_type() == "static_dispatch_class" && (getType(e) == "Int" || getType(e) == "Bool");
+
+      bool dispatch_check = e->get_expr_type() == "dispatch_class";
+      for (auto &[_, map] : classes_features) {
+        if (map[getName(e)] == "Int" || map[getName(e)] == "Bool") {
+          dispatch_check &= true;
+        }
+      }
+
+      bool object_check = e->get_expr_type() == "object_class" &&
+                          (attr_to_type[getName(e)] == "Int" ||
+                           formal_to_type[getName(e)] == "Int" || attr_to_type[getName(e)] == "Bool" || formal_to_type[getName(e)] == "Bool");
+      if (!const_check && !static_dispatch_check && !dispatch_check && !object_check) {
+        error("not Int or Bool " + e->get_expr_type() + " in equal (=) operation");
+      }
+    }
+
   }
 }
 
@@ -269,6 +344,7 @@ int main(int argc, char **argv) {
     }
     // semantic::dump_symtables(idtable, stringtable, inttable);
 
+    FeaturesTable classes_features;
     STable classes_hierarchy;
     SSet non_inherited{"Bool", "Int", "String", "SELF_TYPE"};
     SSet classes_names(non_inherited);
@@ -300,6 +376,7 @@ int main(int argc, char **argv) {
 
       Features features = semantic::getFeatures(current_class);
       SSet features_names;
+      STable features_types;
       STable attr_to_type;
 
       // Loop through features
@@ -334,6 +411,7 @@ int main(int argc, char **argv) {
         if (feature_type == "SELF_TYPE") {
           semantic::error("can't use SELF_TYPE as a type inside class");
         }
+        features_types[feature_name] = feature_type;
 
         if (current_feature->get_feature_type() == "method_class") {
           Formals formals = semantic::getFormals(current_feature);
@@ -420,7 +498,7 @@ int main(int argc, char **argv) {
           // Get method expression
           Expression expr = semantic::getExpression(current_feature);
           semantic::checkExpression(expr, attr_to_type, formal_to_type,
-                                    classes_names, formals_names);
+                                    classes_names, formals_names, classes_features);
 
         } else { // attr_class
           // Check init expression
@@ -437,6 +515,9 @@ int main(int argc, char **argv) {
           features_names.find("main") == features_names.end()) {
         semantic::error("No method 'main' in class 'Main'");
       }
+
+      // Insert class' features names
+      classes_features[class_name] = features_types;
 
       // Dump all features
       // semantic::sequence_out("Features (methods + attributes) of '" +
