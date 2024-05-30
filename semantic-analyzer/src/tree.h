@@ -29,6 +29,11 @@ class mul_class;
 class divide_class;
 class string_const_class;
 class bool_const_class;
+class neg_class;
+class lt_class;
+class eq_class;
+class leq_class;
+class cond_class;
 
 class Visitor {
 public:
@@ -50,6 +55,11 @@ public:
   virtual void visit(divide_class &ref) {}
   virtual void visit(string_const_class &ref) {}
   virtual void visit(bool_const_class &ref) {}
+  virtual void visit(neg_class &ref) {}
+  virtual void visit(lt_class &ref) {}
+  virtual void visit(eq_class &ref) {}
+  virtual void visit(leq_class &ref) {}
+  virtual void visit(cond_class &ref) {}
   virtual ~Visitor() = default;
 };
 
