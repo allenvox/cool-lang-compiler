@@ -11,3 +11,5 @@ echo "\n\033[92;1mInherits test\033[0m"
 bin/analyzer tests/inherits.cl
 echo "\n\033[92;1mTypes test\033[0m"
 bin/analyzer tests/types.cl
+echo "\n\033[92;1mCompare test\033[0m"
+bin/analyzer tests/compare.cl
