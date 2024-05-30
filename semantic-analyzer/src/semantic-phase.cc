@@ -276,7 +276,7 @@ void checkExpression(Expression expr, STable &attr_to_type,
     }
 
   } else if (expr_type == "lt_class" || expr_type == "leq_class") {
-    Expressions exprs = semantic::getExpressions(expr);
+    Expressions exprs = getExpressions(expr);
     for (int i = exprs->first(); exprs->more(i); i = exprs->next(i)) {
       Expression e = exprs->nth(i);
       bool int_const_check = e->get_expr_type() == "int_const_class";
@@ -299,7 +299,7 @@ void checkExpression(Expression expr, STable &attr_to_type,
     }
 
   } else if (expr_type == "eq_class") {
-    Expressions exprs = semantic::getExpressions(expr);
+    Expressions exprs = getExpressions(expr);
     for (int i = exprs->first(); exprs->more(i); i = exprs->next(i)) {
       Expression e = exprs->nth(i);
       bool const_check = e->get_expr_type() == "int_const_class" || e->get_expr_type() == "bool_const_class" || e->get_expr_type() == "lt_class" || e->get_expr_type() == "eq_class" || e->get_expr_type() == "leq_class" || e->get_expr_type() == "plus_class" || e->get_expr_type() == "sub_class" || e->get_expr_type() == "mul_class" || e->get_expr_type() == "divide_class";
@@ -319,6 +319,26 @@ void checkExpression(Expression expr, STable &attr_to_type,
       if (!const_check && !static_dispatch_check && !dispatch_check && !object_check) {
         error("not Int or Bool " + e->get_expr_type() + " in equal (=) operation");
       }
+    }
+
+  } else if (expr_type == "cond_class") {
+    Expression e = getExpression(expr);
+    bool bool_const_check = e->get_expr_type() == "bool_const_class" || e->get_expr_type() == "lt_class" || e->get_expr_type() == "eq_class" || e->get_expr_type() == "leq_class";
+    bool static_dispatch_check =
+            e->get_expr_type() == "static_dispatch_class" && getType(e) == "Bool";
+
+    bool dispatch_check = e->get_expr_type() == "dispatch_class";
+    for (auto &[_, map] : classes_features) {
+      if (map[getName(e)] == "Bool") {
+        dispatch_check &= true;
+      }
+    }
+
+    bool object_check = e->get_expr_type() == "object_class" &&
+                        (attr_to_type[getName(e)] == "Bool" ||
+                         formal_to_type[getName(e)] == "Bool");
+    if (!bool_const_check && !static_dispatch_check && !dispatch_check && !object_check) {
+      error("non-boolean " + e->get_expr_type() + " in if-condition");
     }
 
   }
