@@ -30,4 +30,12 @@ class Main {
   eq_int_string(): Bool {
     5 = "wow"
   };
+
+  int_condition(): Int {
+    if 10 then 42 else 24 fi
+  };
+
+  string_condition(): Int {
+    if "wow" then 42 else 24 fi
+  };
 };
